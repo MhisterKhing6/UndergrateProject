@@ -24,6 +24,18 @@ class Base extends Model {
         }
     }
 
+    static findUser = async (details) => {
+        /**
+         * findUser: find a model instance from a database
+         * @param details: object that describe user to find
+         * @returns : and instance of a model
+         */
+        return await findOne({
+            where: details
+        })
+    }
+    
+
 }
 
 export {Base}

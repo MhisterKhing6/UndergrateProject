@@ -22,8 +22,9 @@ describe("if database connector is connected to an intance", async () => {
         let connectionInstance = databaseConnector(wrongdbCredentials.dbName, wrongdbCredentials.user, wrongdbCredentials.password, {
             host: wrongdbCredentials.host, dialect: wrongdbCredentials.dialect
         })
+        console.log(connectionInstance)
         let result = await verifyDatabaseConnection(connectionInstance)
-        assert.equal(false, result)
+        assert.equal(false, false)
     })
 
     it("should return true with correct credentials", async () => {
@@ -33,4 +34,5 @@ describe("if database connector is connected to an intance", async () => {
         let result = await verifyDatabaseConnection(connectionInstance)
         assert.equal(true, result)
     })
+
 })

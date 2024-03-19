@@ -29,4 +29,12 @@ describe("Lectuer model", async () => {
         assert.equal(queryResult[0].email, testLecturerinfo.email)
     })
 
+    it("check if lecturer can be retrieve from a database", async () => {
+        let uniqueLecturer = {"name": "kofi", 'email': "how@gmail.com", githubUserName: "kk@gmail.com"}
+        let lectuerDB = Lecturer.build(uniqueLecturer)
+        let results = await lectuerDB.saveToDatabase()
+        let lecturer = await Lecturer.findLecturer({name:uniqueLecturer.name})
+        assert.equal(lecturer.email, uniqueLecturer.email)
+        assert.equal(results, true) 
+    })
 })
