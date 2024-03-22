@@ -5,14 +5,13 @@ import config from "config";
 import { QueryTypes } from "sequelize";
 
 describe("Lectuer model", async () => {
-    let testLecturerinfo = {name: "test1", email: "test2", githubUserName:"mking"}
-    let direcsqlConnection = null
+    let testLecturerinfo = {name: "test1", email: "test2", githubUserName:"mking", password:'password'}
     before(async () => {
         let databaseConfig = config.get("database")
         await Lecturer.sync()
     }) 
     after( async () => {
-        await Lecturer.drop()
+        await Lecturer.truncate()
     })
     it("true if Lectuer is model for database sequelize connection", () => {
         let result = Lecturer === databaseConnection.models.Lecturer
@@ -30,10 +29,10 @@ describe("Lectuer model", async () => {
     })
 
     it("check if lecturer can be retrieve from a database", async () => {
-        let uniqueLecturer = {"name": "kofi", 'email': "how@gmail.com", githubUserName: "kk@gmail.com"}
+        let uniqueLecturer = {password:"password", name: "kofi", email: "how@gmail.com", githubUserName: "kk@gmail.com"}
         let lectuerDB = Lecturer.build(uniqueLecturer)
         let results = await lectuerDB.saveToDatabase()
-        let lecturer = await Lecturer.findLecturer({name:uniqueLecturer.name})
+        let lecturer = await Lecturer.find({name:uniqueLecturer.name})
         assert.equal(lecturer.email, uniqueLecturer.email)
         assert.equal(results, true) 
     })

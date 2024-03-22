@@ -4,12 +4,12 @@ import { databaseConnection } from "../utils/databaseConnector.js";
 import { QueryTypes } from "sequelize";
 
 describe("student model", async () => {
-    let testStudentinfo = {name: "test1", email: "test2", githubUserName:"mking"}
+    let testStudentinfo = {name: "test1", email: "test2", githubUserName:"mking", password: 'password'}
     before(async () => {
         await Student.sync()
     }) 
     after( async () => {
-        await Student.drop()
+        await Student.truncate()
     })
     it("true if Lectuer is model for database sequelize connection", () => {
         let result = Student === databaseConnection.models.Student
@@ -26,12 +26,11 @@ describe("student model", async () => {
     })
 
     it("check if student can be retrieve from a database", async () => {
-        let uniqueStudent = {"name": "kofi", 'email': "how@gmail.com", githubUserName: "kk@gmail.com"}
+        let uniqueStudent = {password:"passrod", name: "kofi", email: "how@gmail.com", githubUserName: "kk@gmail.com"}
         let testStudentDB = Student.build(uniqueStudent)
         let results = await testStudentDB.saveToDatabase()
-        let student = await Student.findStudent({name:uniqueStudent.name})
+        let student = await Student.find({name:uniqueStudent.name})
         assert.equal(student.email, uniqueStudent.email)
         assert.equal(results, true) 
     })
-
 })

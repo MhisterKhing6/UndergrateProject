@@ -5,9 +5,9 @@ import { databaseConnection } from "../utils/databaseConnector.js";
 
 class Lecturer extends Base {
 
-   static findLecturer = async (details) => {
+   static find = async (details) => {
       /**
-       * findLectuer: find a model instance from a database
+       * find: find a model instance from a database
        * @param details: object that describe user to find
        * @returns : and instance of a lecturer model
        */
@@ -20,6 +20,9 @@ class Lecturer extends Base {
 Lecturer.init({
 name: {
     type: DataTypes.STRING, allowNull: false
+},
+password: {
+   type: DataTypes.STRING, allowNull: false
 },
  email: {
     type: DataTypes.STRING, allowNull: false,
@@ -34,5 +37,6 @@ name: {
     allowNull: true,
  }
 }, {sequelize: databaseConnection})
+Lecturer.sync()
 
 export { Lecturer }

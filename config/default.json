@@ -1,10 +1,17 @@
 {
     "database": {
     "host": "localhost",
-    "dialect": "mysql",
+    "dialect": "mariadb",
     "dbName": "test",
     "password":"9%8%7521KofiKofi",
     "user": "root",
     "port": "3306"
+    },
+    "applicationInterface": {
+        "port": 3000,
+        "host": "localhost"
+    },
+    "jwt" : {
+        "secrete": "9%8%7521@#ks%232423"
     }
 }

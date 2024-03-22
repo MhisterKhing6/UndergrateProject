@@ -14,6 +14,7 @@ class Base extends Model {
      */
         try {
             let Dbconnected = await verifyDatabaseConnection()
+            console.log(Dbconnected)
             if(Dbconnected) {
                 await this.save()
                 return true
@@ -23,19 +24,6 @@ class Base extends Model {
             return false
         }
     }
-
-    static findUser = async (details) => {
-        /**
-         * findUser: find a model instance from a database
-         * @param details: object that describe user to find
-         * @returns : and instance of a model
-         */
-        return await findOne({
-            where: details
-        })
-    }
-    
-
 }
 
 export {Base}
