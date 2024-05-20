@@ -10,18 +10,17 @@ class Base extends Model {
     /**
      * saveToDatabse: save model instance into a database
      * @params: None
-     * @returns  true if saved, false otherwise
+     * @returns  user
      */
         try {
             let Dbconnected = await verifyDatabaseConnection()
-            console.log(Dbconnected)
             if(Dbconnected) {
-                await this.save()
-                return true
+                let user = await this.save()
+                return user
             } 
         } catch(err) {
             console.log(err)
-            return false
+            return null
         }
     }
 }

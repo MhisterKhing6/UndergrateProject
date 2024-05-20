@@ -24,7 +24,7 @@ export const verifyToken = (token) => {
     let result = ""
     try {
         let payload = jsonwebtoken.verify(token, secreteKey)
-        result = {"verified": true, payload}
+        result = {"verified": true, ...payload}
     } catch (error) {
         result = {"verified": false}
     }

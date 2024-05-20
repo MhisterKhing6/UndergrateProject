@@ -32,8 +32,8 @@ export function validateEmail(email) {
  */
 export function validatePassword(passowrd) {
     //check if passwordword does not contain digit, capital letter and has less then 6 characters
-    if ((passowrd.length < 6) || !passowrd.match(/.*[A-Z]+.*/) || !passowrd.match(/.*[0-9]+.*/))
-        return {validated: false, reason: "password must be at least 6 characters, should contain a digit and a capital letter"}
+    if ((passowrd.length < 4) || !passowrd.match(/.*[A-Z]+.*/) || !passowrd.match(/.*[0-9]+.*/))
+        return {validated: false, reason: "password must be at least 4 characters, should contain a digit and a capital letter"}
     return ({validated: true, reason: " success "})
 }
 

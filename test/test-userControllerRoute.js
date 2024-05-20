@@ -1,32 +1,49 @@
 import { app } from "../app.js";
 import request from "supertest";
 import { assert } from "chai";
-import { Student } from "../models/student.js";
+import { Student } from "../models/relationship/relations.js";
 import { databaseConnection } from "../utils/databaseConnector.js";
-import { Lecturer } from "../models/lecturer.js";
+import { Lecturer } from "../models/relationship/relations.js";
+import { Program, Class } from "../models/relationship/relations.js";
+import { v4 } from "uuid";
 
 
 
 describe("user controller route", async () => {
     let student = {
-        "name": "test student", email: "test@gmmail.com", 'password': "test1222Kofi", githubUsername: "mhisther11"
+        "name": "test student", email: "testrr@gmmail.com", 'password': "test1222Kofi", username: "mhisther11",
+        "studentId": "9875217", "index": "987322"
     }
     let lecturer = {
-        name: "test lectuere", email: "lect@gmail.com", password: "test12333Kofi"
+        name: "test lectuere", email: "lect@gmail.com", password: "test12333Kofi", "lecturerId": "4587774"
     }
+    let program = null;
+    let clasName = null;
+    before(async () => {
+        let programName = v4()
+        let programCode = v4()
+        let program = await Program.create({programName, programCode,"programDesc": "Teaches the Scssience of computing"})
+        let clasName = await Class.create({"className": "TEST3", classCode: "CSM#2"})
+        clasName["ProgramId"] = program.id 
+        await clasName.save()
+        student['ClassId'] = clasName.id
+        student['ProgramId'] = program.id
+    })
+
     beforeEach(async () => {
-       await Student.truncate()
-       await Lecturer.truncate()
+       await Student.destroy({truncate: {cascade: true} })
+       await Lecturer.destroy({truncate: {cascade: true} })
     })
 
     after(async () => {
-        Student.truncate()
-        Lecturer.truncate()
+       Student.destroy({truncate: {cascade: true} })
+       Lecturer.destroy({truncate: {cascade: true} })
     })
 
     it("should return status 200 and created to be true", async () => {
         /**registering student */
         let response = await request(app).post("/api/auth/register/student").type('json').send(student)
+        console.log(response.body)
         assert.equal(201, response.status)
         assert.equal(true, response.body.created)
     })
@@ -42,7 +59,7 @@ describe("user controller route", async () => {
         assert.isUndefined(response.body["missing fields"])
         assert.isDefined(response.body.reason)
         assert.isString(response.body.reason)
-        assert.equal("provide valid email, password must be at least 6 characters, should contain a digit and a capital letter", response.body.reason)
+        assert.equal("provide valid email, password must be at least 4 characters, should contain a digit and a capital letter", response.body.reason)
     })
 
     it("lecturer: should return status 200 and created to be true", async () => {
@@ -63,7 +80,7 @@ describe("user controller route", async () => {
         assert.isUndefined(response.body["missing fields"])
         assert.isDefined(response.body.reason)
         assert.isString(response.body.reason)
-        assert.equal("provide valid email, password must be at least 6 characters, should contain a digit and a capital letter", response.body.reason)
+        assert.equal("provide valid email, password must be at least 4 characters, should contain a digit and a capital letter", response.body.reason)
     })
 
     it("should return status 400, and missing fields", async () => {
@@ -87,7 +104,7 @@ describe("user controller route", async () => {
 
         let response = await request(app).post("/api/auth/register/student").type('json').send(student)
         if(response.status === 201) {
-            let loginResponse = await request(app).post("/api/auth/login/student").type('json').send({email: student.email, password:student.password})
+            let loginResponse = await request(app).post("/api/auth/login/student").type('json').send(student)
             assert.equal(200, loginResponse.status)
             assert.isDefined(loginResponse.body.token)
             assert.isString(loginResponse.body.token)
@@ -99,7 +116,7 @@ describe("user controller route", async () => {
     it("wrong password", async () => {
         let response = await request(app).post("/api/auth/register/student").type('json').send(student)
         if(response.status === 201) {
-            let loginResponse = await request(app).post("/api/auth/login/student").type('json').send({email: student.email, password:student.email})
+            let loginResponse = await request(app).post("/api/auth/login/student").type('json').send({studentId: student.studentId, password:student.email})
             console.log(loginResponse.body)
             assert.equal(401, loginResponse.status)
             assert.isDefined(loginResponse.body.reason)
@@ -112,7 +129,7 @@ describe("user controller route", async () => {
     it("user not registered", async () => {
         let response = await request(app).post("/api/auth/register/student").type('json').send(student)
         if(response.status === 201) {
-            let loginResponse = await request(app).post("/api/auth/login/student").type('json').send({email: student.name, password:student.password})
+            let loginResponse = await request(app).post("/api/auth/login/student").type('json').send({studentId: student.name, password:student.password})
             assert.equal(401, loginResponse.status)
             assert.isDefined(loginResponse.body.reason)
             assert.equal(loginResponse.body.reason, "user is not registered")
@@ -126,7 +143,7 @@ describe("user controller route", async () => {
 
         let response = await request(app).post("/api/auth/register/lecturer").type('json').send(lecturer)
         if(response.status === 201) {
-            let loginResponse = await request(app).post("/api/auth/login/lecturer").type('json').send({email: lecturer.email, password:lecturer.password})
+            let loginResponse = await request(app).post("/api/auth/login/lecturer").type('json').send(lecturer)
             assert.equal(200, loginResponse.status)
             assert.isDefined(loginResponse.body.token)
             assert.isString(loginResponse.body.token)
@@ -138,7 +155,7 @@ describe("user controller route", async () => {
     it("wrong password", async () => {
         let response = await request(app).post("/api/auth/register/lecturer").type('json').send(lecturer)
         if(response.status === 201) {
-            let loginResponse = await request(app).post("/api/auth/login/lecturer").type('json').send({email: lecturer.email, password:lecturer.email})
+            let loginResponse = await request(app).post("/api/auth/login/lecturer").type('json').send({lecturerId: lecturer.lecturerId, password:lecturer.email})
             console.log(loginResponse.body)
             assert.equal(401, loginResponse.status)
             assert.isDefined(loginResponse.body.reason)
@@ -151,7 +168,7 @@ describe("user controller route", async () => {
     it("lecturer not registered", async () => {
         let response = await request(app).post("/api/auth/register/lecturer").type('json').send(lecturer)
         if(response.status === 201) {
-            let loginResponse = await request(app).post("/api/auth/login/lecturer").type('json').send({email: lecturer.name, password:lecturer.password})
+            let loginResponse = await request(app).post("/api/auth/login/lecturer").type('json').send({lecturerId: lecturer.name, password:lecturer.password})
             assert.equal(401, loginResponse.status)
             assert.isDefined(loginResponse.body.reason)
             assert.equal(loginResponse.body.reason, "user is not registered")

@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { Lecturer } from "../models/lecturer.js";
+import { Lecturer } from "../models/users/lecturer.js";
 import { databaseConnection } from "../utils/databaseConnector.js";
 import config from "config";
 import { QueryTypes } from "sequelize";
@@ -8,10 +8,10 @@ describe("Lectuer model", async () => {
     let testLecturerinfo = {name: "test1", email: "test2", githubUserName:"mking", password:'password'}
     before(async () => {
         let databaseConfig = config.get("database")
-        await Lecturer.sync()
+        //await Lecturer.sync()
     }) 
     after( async () => {
-        await Lecturer.truncate()
+        //await Lecturer.truncate()
     })
     it("true if Lectuer is model for database sequelize connection", () => {
         let result = Lecturer === databaseConnection.models.Lecturer

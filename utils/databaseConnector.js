@@ -22,10 +22,10 @@ export const databaseConnector = (dbName, user, password, databaobj) => {
 
 //Get instance of database connection
 let databaseConnection = databaseConnector(database.dbName, database.user, database.password, 
-                                  {host:database.host, dialect: database.dialect})
+                                  {host:database.host, dialect: database.dialect, logging:false})
 
 
-export let verifyDatabaseConnection = async (dbConnectionInstance) => {
+export let verifyDatabaseConnection = async () => {
     /**
      * verifyConnection: check if database connected is connected to an instance
      * params: 

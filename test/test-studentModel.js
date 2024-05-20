@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { Student } from "../models/student.js";
+import { Student } from "../models/relationship/relations.js"
 import { databaseConnection } from "../utils/databaseConnector.js";
 import { QueryTypes } from "sequelize";
 
@@ -9,7 +9,7 @@ describe("student model", async () => {
         await Student.sync()
     }) 
     after( async () => {
-        await Student.truncate()
+        await Student.destroy({truncate: {cascade: true}})
     })
     it("true if Lectuer is model for database sequelize connection", () => {
         let result = Student === databaseConnection.models.Student

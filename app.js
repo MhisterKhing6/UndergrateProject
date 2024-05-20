@@ -3,7 +3,8 @@ import express from "express"
 import configuration from "config"
 import cors from "cors"
 import { nonAuthRouth } from "./routes/nonAuthController.js"
-
+import { authRouter } from "./routes/authRouter.js"
+import { lecturerRoute } from "./routes/lecturesRoute.js"
 //starting point
 let app = express()
 
@@ -16,7 +17,9 @@ app.get("/", (req, res) => {
     res.send("ok i am workding")
 })
 // registration and non authentication interfaces
-app.use('/api/auth', nonAuthRouth)
+app.use('/api', nonAuthRouth)
+app.use('/user/:type', authRouter)
+app.use("/coder/:type", lecturerRoute)
 
 //application interface
 let applicationInterface = configuration.get("applicationInterface")
@@ -31,3 +34,4 @@ app.listen(port, host, () => {
 
 //export for testing
 export {app}
+ 

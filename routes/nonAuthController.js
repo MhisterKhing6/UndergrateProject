@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { Student } from "../models/student.js";
-import { Lecturer } from "../models/lecturer.js";
+import { Student, Lecturer, VerifyEmail, ResetPasswordDb, Compiler } from "../models/relationship/relations.js"
 import { UserController } from "../controllers/userController.js";
-
+import { ProgramController } from "../controllers/programController.js";
+import { VerifyController } from "../controllers/verficationController.js";
+import { AssignmentSController } from "../controllers/assignmentController.js";
 //Routers
 let nonAuthRouth = Router()
 
@@ -13,8 +14,18 @@ let nonAuthRouth = Router()
  * method: post
  * 
 */
-nonAuthRouth.post("/register/student", async (req, res) => {
+nonAuthRouth.post("/auth/register/student", async (req, res) => {
         return await UserController.register(req, res, Student)
+})
+
+/**
+ * Student registration
+ * domain: public
+ * method: post
+ * 
+*/
+nonAuthRouth.post("/program/classes", async (req, res) => {
+        return await ProgramController.GetClass(req, res)
 })
 
 /**
@@ -22,7 +33,7 @@ nonAuthRouth.post("/register/student", async (req, res) => {
  * domain: public
  * methode: post
  */
-nonAuthRouth.post("/register/lecturer", async (req, res) => {
+nonAuthRouth.post("/auth/register/lecturer", async (req, res) => {
         return await UserController.register(req, res, Lecturer)
 })
 
@@ -31,18 +42,95 @@ nonAuthRouth.post("/register/lecturer", async (req, res) => {
  * domain: public
  * methode: post
  */
-nonAuthRouth.post("/login/lecturer", async (req, res) => {
+nonAuthRouth.post("/auth/login/lecturer", async (req, res) => {
         return await UserController.login(req, res, Lecturer)
 })
 
 /**
  * Student login endpoint
  * domain: public
- * methode: post
+ * methode: get
  */
-nonAuthRouth.post("/login/student", async (req, res) => {
+nonAuthRouth.post("/auth/login/student", async (req, res) => {
         return await UserController.login(req, res, Student)
 })
 
+/**
+ * verify email endpoint
+ * domain: public
+ * method: get
+ */
+nonAuthRouth.get("/auth/verify/email/:id/:secret", async (req, res) => {
+        return await VerifyController.VerifyEmailController(req, res, VerifyEmail)
+})
 
+/**
+ * resend email message 
+ * domain public
+ * method get
+ */
+nonAuthRouth.get("/auth/resend/email/:id", async (req, res) => {
+        return await VerifyController.resendEmail(req, res)
+})
+
+/**
+ * reset user password 
+ * domain public
+ * method get
+ */
+nonAuthRouth.get("/auth/email/reset-password/:email/:type", async (req, res) => {
+        return await VerifyController.forgetPassword(req, res)
+})
+
+nonAuthRouth.get("/auth/email/reset-password/verify/:id/:secret", async (req, res,) => {
+        return await VerifyController.VerifyEmailController(req, res, ResetPasswordDb)
+})
+/**
+ * update user password returns 
+ * domain: public
+ * mehtod: post
+ */
+nonAuthRouth.post("/auth/user/reset-password", async (req, res) => {
+        return await VerifyController.updatePassword(req, res)
+})
+
+/**
+ * programs returns all programs in offered by the school
+ * domain: public
+ * mehtod: get
+ */
+nonAuthRouth.get("/programs", async (req, res) => {
+        return await ProgramController.getPrograms(req, res)
+})
+
+/***
+ * returns courses offered by a class
+ * domain: public
+ * method: get
+ */
+nonAuthRouth.get("/program/class/courses/:classId", async (req, res) => {
+        return await ProgramController.GetCourses(req, res)
+})
+
+/**
+ * returns classes for a program
+ * domain: public
+ * method: get
+ */
+nonAuthRouth.get("/program/class/courses/:classId", async (req, res) => {
+        return await ProgramController.GetClass(req, res)
+})
+/**
+ * return all compiler 
+ * method get
+ * domain public
+ */
+
+nonAuthRouth.get("/compilers", async (req, res) => {
+        return await AssignmentSController.getCompilersSimple(req, res)
+    })
+
+nonAuthRouth.get("/compiler/:id", async (req, res) => {
+        return AssignmentSController.compilerDetials(req, res)
+})
 export {nonAuthRouth}
