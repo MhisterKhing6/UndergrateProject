@@ -1,10 +1,11 @@
 import { promisify } from "util"
-import { readFile, writeFile, existsSync, mkdir } from "fs"
+import { readFile, writeFile, existsSync, mkdir, unlink } from "fs"
 import { v4 } from "uuid"
 import path from "path"
 const readFileAsync = promisify(readFile)
 const writeFileAsyc = promisify(writeFile)
-const mkdirAsync = promisify(mkdir)
+const mkdirAsync =    promisify(mkdir)
+const unlinkAsync =   promisify(unlink)
 
 
 const encodeBase64 = async (buffer) => {
@@ -35,7 +36,7 @@ const readFromFile = async (filePath) => {
     if(existsSync(filePath)) {
         try {
             let file = await readFileAsync(filePath)
-            return {file, filePath}
+            return file.toString("ascii")
         } catch (err) {
             console.log(err)
             return null
@@ -90,9 +91,13 @@ const saveTaskFile = async ({data, ext}, assId, taskId, type ) => {
 }
 
 const readTaskFile = async (filePath) => {
-    //check if the file exist
-    let file = await readFromFile(filePath)
-    return !file ? null : await encodeBase64(file.file)
+    //read the  content of the file
+    return await readFromFile(filePath)
 } 
 
-export {readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }
+const deleteTaskFile = async (filePath) => {
+    //delete task file
+    return await unlinkAsync(filePath)
+} 
+
+export {deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }

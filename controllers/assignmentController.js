@@ -2,8 +2,8 @@
 controls assignment endpoints
 */
 
-import { Assignment, Compiler, AssignmentClasses, Task } from "../models/relationship/relations.js"
-import { saveTaskFile } from "../utils/fileHandler.js"
+import { Assignment, Compiler, AssignmentClasses, Task, Class } from "../models/relationship/relations.js"
+import { deleteTaskFile, readTaskFile, saveTaskFile, writeToFile } from "../utils/fileHandler.js"
 import { verifyMandatoryFields } from "../utils/verificationFunctions.js"
 import { v4 } from "uuid"
 
@@ -33,6 +33,88 @@ class AssignmentSController {
         
         
     }
+
+    static getAssignmentDetails = async (req, res) => {
+        //delete enteries
+        let id = req.params.id
+        if(!id)
+            return req.status(200).json({"reason": "fields missing", missingFields: "id"})
+        //get assignment
+        
+        let entry = await Assignment.findOne({where:{id}, attributes:['endDate', "startDate", "title", "objectives",  "plagiarism", "documentation", "codingStandards",
+        'gitMode',"readme", "repository", "CourseId", "LecturerId"]})
+        //delete assignemnt
+        if(!entry)
+            return res.status(400).json({reason: "assignment not found"})
+        return res.status(200).json(entry)
+    }
+
+    static deletAssignment = async (req, res) => {
+        //delete enteries
+        let id = req.params.id
+        let entry = await Assignment.findByPk(id)  
+        await AssignmentClasses.destroy(
+            {where:{
+                AssignmentId:id
+            }}
+        )
+        await entry.destroy()
+        return res.status(200).json({reason: "operation success"})
+    }
+
+    static viewAssingments = async (req, res) => {
+        let lecturerId = req.user.id
+        //get all assingments with lecturer id
+        let assignements = await Assignment.findAll({where: {
+            lecturerId
+        }, attributes:['endDate', "startDate", "title", "objectives",  "plagiarism", "documentation", "codingStandards",
+        'gitMode',"readme", "repository", "CourseId", "LecturerId"]})
+        ///return all assignment created by a lecturer
+        return res.status(200).json(assignements)
+    }
+    
+
+    static updateAssignment = async (req, res) => {
+        //updates alreadedy created assignments
+        let details = req.body
+        //check for right enteries
+        let correctColumns = ['endDate', "startDate", "title", "objectives",  "plagiarism", "documentation", "codingStandards",
+                              'gitMode',"readme", "repository", "CourseId", "LecturerId"]
+        if(!details.id)
+            return res.status(400).json({reason: "fields missing", missingFields: "id"})
+        //get assignment by id
+        let assignment = await Assignment.findByPk(details.id)
+        if(!assignment)
+            return res.status(400).json({reason: "assignment not found"})
+        //update right enteries
+        for (const column of Object.keys(details)) {
+            //exclude id
+            if(!(column === "id" || column ==="open" || column === "createdAt" || column === "updatedAt")) {
+                if(correctColumns.includes(column)) {
+                   //update information for entry
+                   assignment[column] = details[column] 
+                } else {
+                    return res.status(400).json({"reason": "wrong column entry given", "wrong column": column})
+                }
+            }
+        }
+        //save information in the database
+        await assignment.save()
+        return res.status(200).json({"reason": "success", assignmentId: details.id})
+    }
+
+    static addClass = async (req, res) => {
+        //add class to assignment
+        let classDetails = req.body
+        if(!(classDetails.classId && classDetails.assId))
+            return res.status(400).json({"reason": "fileds missing, fields name classId, assId"})
+        let assignement = await Assignment.findByPk(assId)
+        if(!assignement)
+            return res.status(400).json({"reason": "assignment not found"})
+        //save the class to assignment
+        await assignement.addClass(await Class.findByPk(classDetails.classId))
+        return res.status(200).json({"reason": "success"})
+    }
     static addTask = async (req, res) => {
         let task = req.body
         let requiredFields = ["ext", "requirement", "solutionPath", "AssignmentId", "number", "examples", "solutionScript"]
@@ -57,6 +139,72 @@ class AssignmentSController {
         }
     }
 
+    static viewAssignmentTasks = async (req, res) => {
+            let id  = req.params.assId
+            //check if id is given
+            if(!id) 
+            return res.status(400).json({"reason": "fields missing", missingFields: "assignmentId"})
+            //retrive assignment information
+            let assignement = await Assignment.findByPk(id)
+            //check if assignment is given
+            if(!assignement)
+                return res.status(400).json({"reasson": "assignment not found"})
+            //get assignment quesiont
+            let questions = await Task.findAll({where:{AssignmentId:id}, attributes: ["id","number", "requirement"]})
+            return res.status(200).json(questions)
+    }
+
+
+    static updateTask = async (req, res) => {
+        //updates alreadedy created assignments
+        let details = req.body
+        //check for right enteries
+        let correctColumns = ['solutionScript', "number", "examples", "requirement"]
+        if(!details.id)
+            return res.status(400).json({reason: "fields missing", missingFields: "id"})
+        //get assignment by id
+        let taskEntry = await Task.findByPk(details.id)
+        if(!taskEntry)
+            return res.status(400).json({reason: "question not found"})
+        //update right enteries
+        for (const column of Object.keys(details)) {
+            //exclude id and solutionPath
+            if(!(column === "id" || column ==="solutionScriptPath")) {
+                if(correctColumns.includes(column)) {
+                   //update information for entry
+                   if(column === "solutionScript"){
+                    //upldate the scolutionCript file
+                    let response = await writeToFile(taskEntry.solutionScriptPath, details.solutionScript)
+                    if(!response)
+                        return res.status(400).json({reason: "couldnt upadate script history"})
+                   }  
+                    else
+                        taskEntry[column] = details[column] 
+                } else {
+                    return res.status(400).json({"reason": "wrong column entry given", "wrong column": column})
+                }
+            }
+        }
+        //save information in the database
+        await taskEntry.save()
+        return res.status(200).json({"reason": "success", questionId: details.id})
+    }
+
+    static getTaskDetails = async (req, res) => {
+        //get question id
+        let taskId  = req.params.id
+        if(!taskId)
+        return res.status(400).json({"reason": "fields missing", missingFields: "id"})
+        //get task id
+        let task = await Task.findByPk(taskId)
+        if(!task)
+        return res.status(400).json({"reason": "couldnt find question"})
+        //read solution script content
+        let solutionScript = await readTaskFile(task.solutionScriptPath)
+        return res.status(200).json({number:task.number,id:task.id,examples:task.examples, requirement:task.requirement, solutionScript})
+
+    }
+
     static getCompilersSimple = async (req, res) => {
         //get all programs
         let compilers = await Compiler.findAll({attributes: ['name', 'id', 'extension']})
@@ -65,7 +213,19 @@ class AssignmentSController {
         return res.status(200).json(compilers)
     }
 
+    static deleteTask = async (req, res) => {
+        //delete enteries
+        let id = req.params.id
+        let entry = await Task.findByPk(id)  
+        deleteTaskFile(entry.solutionScriptPath)
+        await entry.destroy()
+        return res.status(200).json({reason: "operation success"})
+    }
+
+
+
     static compilerDetials = async (req, res) => {
+        //return compiler information with id
         let id = req.params.id
         let compiler = await Compiler.findByPk(id)
         if(!compiler) 

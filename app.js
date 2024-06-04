@@ -19,7 +19,7 @@ app.get("/", (req, res) => {
 // registration and non authentication interfaces
 app.use('/api', nonAuthRouth)
 app.use('/user/:type', authRouter)
-app.use("/coder/:type", lecturerRoute)
+app.use("/coder/lecturer", lecturerRoute)
 
 //application interface
 let applicationInterface = configuration.get("applicationInterface")

@@ -1,11 +1,8 @@
 /*Foreign relationships between object */
 import { Lecturer } from "../users/lecturer.js";
 import { Assignment } from "../assignment/assignment.js";
-import { Resources } from "../assignment/resources.js";
 import {Compiler} from "../programming/compiler.js"
 import { Task } from "../assignment/task.js";
-import { TaskTestScript } from "../assignment/testScript.js";
-import { ExampleScript } from "../assignment/exampleScript.js";
 import { databaseConnection } from "../../utils/databaseConnector.js";
 import {Student} from "../users/student.js"
 import { Class } from "../programs/class.js";
@@ -50,38 +47,38 @@ const AssignmentClasses = databaseConnection.define('AssignmentClasses', {
   });
 
 //relationship between reset password and users
-Student.hasOne(ResetPasswordDb, {constraints: false})
+Student.hasOne(ResetPasswordDb, {constraints: false, onDelete:"CASCADE"})
 ResetPasswordDb.belongsTo(Student)
-Lecturer.hasOne(ResetPasswordDb,  {constraints: false})
+Lecturer.hasOne(ResetPasswordDb,  {constraints: false, onDelete:"CASCADE"})
 ResetPasswordDb.belongsTo(Student)
 
 //relationship between Student and email Verifcation
-Student.hasOne(VerifyEmail,  {constraints: false})
+Student.hasOne(VerifyEmail,  {constraints: false, onDelete:"CASCADE"})
 VerifyEmail.belongsTo(Student)
 
 //relationship betwn Lecturer and email Verification
-Lecturer.hasOne(VerifyEmail, {constraints: false})
+Lecturer.hasOne(VerifyEmail, {constraints: false, onDelete:"CASCADE"})
 VerifyEmail.belongsTo(Lecturer, {constraints: false})
 
 //relationship between program and class 
-Program.hasMany(Class,  {constraints: false})
+Program.hasMany(Class,  {constraints: false, onDelete:"CASCADE"})
 Class.belongsTo(Program)
 
 //relationship between student and program
-Program.hasMany(Student,  {constraints: false})
+Program.hasMany(Student,  {constraints: false, onDelete:"CASCADE"})
 Student.belongsTo(Program)
 //relationship between class and Student
-Class.hasMany(Student,  {constraints: false})
+Class.hasMany(Student,  {constraints: false,  onDelete:"CASCADE"})
 Student.belongsTo(Class)
 
 //relationship between lecturer and Assignment
-Lecturer.hasMany(Assignment,  {constraints: false})
+Lecturer.hasMany(Assignment,  {constraints: false, onDelete:"CASCADE"})
 Assignment.belongsTo(Lecturer)
 
 //relationship between class and assignemnt
 
-Assignment.belongsToMany(Class, {through: AssignmentClasses , constraints: false})
-Class.belongsToMany(Assignment, {through: AssignmentClasses, constraints: false})
+Assignment.belongsToMany(Class, {through: AssignmentClasses , constraints: false, onDelete:"CASCADE"})
+Class.belongsToMany(Assignment, {through: AssignmentClasses, constraints: false, onDelete:"CASCADE"})
 
 //relationship between course and class
 Program.hasMany(Course, {constraints: false})
@@ -94,29 +91,14 @@ Assignment.belongsTo(Course, {constraints: false})
 Class.belongsToMany(Course, {through: ClassCourses, constraints: false})
 Course.belongsToMany(Class, {through:ClassCourses, constraints: false})
 
-//relationship between assignment and resources
-Assignment.hasMany(Resources,  {constraints: false})
-Resources.belongsTo(Assignment, {constraints: false})
 
 //relationship between task and assignment
 Assignment.hasMany(Task,  {constraints: false})
 Task.belongsTo(Assignment, {constraints: false})
-
-//relationship between task and tescripts
-Task.hasOne(TaskTestScript,  {constraints: false})
-TaskTestScript.belongsTo(Task, {constraints: false})
-
-//relationshp between test script and compiler
-Compiler.hasMany(TaskTestScript,  {constraints: false})
-TaskTestScript.belongsTo(Compiler, {constraints: false})
-
-//relationship between task and example codes
-Task.hasOne(ExampleScript,  {constraints: false})
-ExampleScript.belongsTo(Task)
 
 //relations between task and compiler
 Compiler.hasMany(Task,  {constraints: false})
 Task.belongsTo(Compiler)
 
 databaseConnection.sync({alter: true})
-export {ClassCourses, Course, AssignmentClasses,ResetPasswordDb,VerifyEmail,Task, Lecturer, Assignment, Compiler, Resources, ExampleScript,TaskTestScript, Student, Program, Class }
+export {ClassCourses, Course, AssignmentClasses,ResetPasswordDb,VerifyEmail,Task, Lecturer, Assignment, Compiler, Student, Program, Class }

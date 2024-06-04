@@ -3,6 +3,7 @@ import { getAuthorizationtoken, verifyToken } from "../utils/authenticationFunct
 import { Lecturer, Student } from "../models/relationship/relations.js";
 import { UserController } from "../controllers/userController.js";
 import { Router } from "express";
+import { AssignmentSController } from "../controllers/assignmentController.js";
 //get user login detailsl
 let authRouter = Router()
 authRouter.use(async (req, res, next) => {
@@ -27,7 +28,6 @@ authRouter.use(async (req, res, next) => {
     if(userInstance.email !== userPayload.email)
         return res.status(401).json({"reason": "wrong token"})
     req.user = userInstance
-    req.user.type = type
     next()
 
 })
@@ -40,6 +40,17 @@ authRouter.get("/me", async (req, res) => {
 })
 
 
-//
+/**
+ * view task description
+ * method: get
+ * domain: authenticated users
+ */
+authRouter.get("/assignment/task/:id", AssignmentSController.getTaskDetails)
+
+/**
+ * get the details of the assignment with id
+ * method: get
+ */
+authRouter.get("/assignment/:id", AssignmentSController.getAssignmentDetails)
 
 export {authRouter}

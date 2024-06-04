@@ -55,12 +55,6 @@ Assignment.init({
         type: DataTypes.UUID,
         primaryKey: true,
         defaultValue: DataTypes.UUIDV4
-     },
-     codingStyleCheck: {
-        type:DataTypes.BOOLEAN, allowNull: true
-     },
-     documentaionCheck: {
-        type:DataTypes.BOOLEAN, allowNull: true
      }
      //compilerId: relationship attribute use to identify the type of compiler or the programming language
 }, {sequelize: databaseConnection})

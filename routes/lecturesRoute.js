@@ -33,12 +33,70 @@ lecturerRoute.use(async (req, res, next) => {
  * return all compilers offered by the program
  */
 
+/**
+ * create assignment
+ * method: post
+ * domain:  restricted to lecturers
+ */
+lecturerRoute.post("/assignment", AssignmentSController.createAssignment)
 
-lecturerRoute.post("/assignment", async (req, res) => {
-    return  await AssignmentSController.createAssignment(req, res)
-})
+/**
+ * assignment created by a lecturer
+ * method get
+ * domain restricted to lecturers
+ */
+lecturerRoute.get("/assignments", AssignmentSController.viewAssingments)
 
-lecturerRoute.post("/assignment/task", async (req, res) => {
-    return await AssignmentSController.addTask(req, res)
-})
+/**
+ * update created assignment
+ * method put
+ * domain restricted to lecturers
+ */
+lecturerRoute.put("/assignment", AssignmentSController.updateAssignment)
+
+
+
+/**
+ * update delete assignment
+ * method delete
+ * domain restricted to lecturers
+ */
+lecturerRoute.delete("/assignment/:id", AssignmentSController.deletAssignment)
+/*
+ * add questions to assignments
+ * method: post
+ * domain: restricted to lecturers
+ */
+lecturerRoute.post("/assignment/task", AssignmentSController.addTask)
+
+/*
+ * update assignment task
+ * method: put
+ * domain: restricted to lecturers
+ */
+lecturerRoute.put("/assignment/task", AssignmentSController.updateTask)
+
+/*
+ * view task for assignments
+ * method: post
+ * domain: restricted to lecturers
+ */
+lecturerRoute.get("/assignment/tasks/:assId", AssignmentSController.viewAssignmentTasks)
+
+/*
+ * delete question
+ * method: post
+ * domain: restricted to lecturers
+ */
+lecturerRoute.delete("/assignment/task/:id", AssignmentSController.deleteTask)
+
+/*
+ * add class to assignment
+ * method: post
+ * domain: restricted to lecturers
+ */
+lecturerRoute.post("/assignment/add/class", AssignmentSController.addClass)
+
+
+
 export {lecturerRoute}
