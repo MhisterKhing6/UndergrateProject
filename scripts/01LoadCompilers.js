@@ -2,7 +2,7 @@ import { Compiler } from "../models/relationship/relations.js";
 
 let data = [
     {
-        extension:".js", name: "node js", "version": "22.00", "installationCodes": "sudo apt -y; sudo apt install nodejs",
+        extension:".js", enviroment:"node",name: "node js", "version": "22.00", "installationCodes": "sudo apt -y; sudo apt install nodejs",
         "requirement": `<h1>General requirement</h1>
         <ul> 
             <li>All your files will be executed on ubuntu 20.xx using node 22.x.x </li>

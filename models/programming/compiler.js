@@ -34,6 +34,9 @@ Compiler.init({
         primaryKey: true,
         defaultValue: DataTypes.UUIDV4
      },
+     enviroment: {
+       type:DataTypes.STRING, allowNull:true
+     },
      extension : {
       type: DataTypes.STRING, allowNull: false
   },

@@ -5,6 +5,7 @@ import cors from "cors"
 import { nonAuthRouth } from "./routes/nonAuthController.js"
 import { authRouter } from "./routes/authRouter.js"
 import { lecturerRoute } from "./routes/lecturesRoute.js"
+import { studentRoute } from "./routes/studentRoute.js"
 //starting point
 let app = express()
 
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
 app.use('/api', nonAuthRouth)
 app.use('/user/:type', authRouter)
 app.use("/coder/lecturer", lecturerRoute)
+app.use("/coder/student", studentRoute)
 
 //application interface
 let applicationInterface = configuration.get("applicationInterface")

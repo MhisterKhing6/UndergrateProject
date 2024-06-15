@@ -6,16 +6,14 @@
 <i>/api/compilers</i> 
 <p>Method: GET <br />
 Required fields: None
-   <
     <br />
    Returns sucess status: 200 and a list of all compilers offered by the program</br>
    Return failure: a json response with a reason field explaining the cause of the failure
 </p>
-<i>/api/compiler/:id</i> 
+<i>/api/compiler/:id</i> <br> 
 Description: returns compiler with compiler id
 <p>Method: GET <br />
 Required fields: None
-   <
     <br />
    Returns sucess status: 200 and compiler object </br>
    Return failure: a json response with a reason field explaining the cause of the failure
@@ -129,7 +127,14 @@ Required fields: 'email', 'password', 'name', 'lecturerId' <br />
 Required fields: 'password', 'lecturerId' <br />
    Returns sucess status: 200 json resonse with a token for verification </br>
    Return failure: a json reasonponse with a reason field explaining the cause of the failure
-</p> 
+</p>
+
+<i>/api/auth/lecturer/refresh/token </i> 
+<p>Method: POST <br />
+Required fields: 'refresh_token' <br />
+   Returns sucess status: 200 json resonse with a token for verification </br>
+   Return failure: a json reasonponse with a reason field explaining the cause of the failure
+</p>
 
 <i>/user/lecturer/me </i> 
 <p>Method: GET <br />
@@ -241,3 +246,9 @@ Required fields: 'password', 'studentId' <br />
    Return failure: a json reasonponse with a reason field explaining the cause of the failure
 </p> 
 
+<i>/api/auth/student/refresh/token </i> 
+<p>Method: POST <br />
+Required fields: 'refresh_token' <br />
+   Returns sucess status: 200 json resonse with a token for verification </br>
+   Return failure: a json reasonponse with a reason field explaining the cause of the failure
+</p>

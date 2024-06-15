@@ -133,4 +133,11 @@ nonAuthRouth.get("/compilers", async (req, res) => {
 nonAuthRouth.get("/compiler/:id", async (req, res) => {
         return AssignmentSController.compilerDetials(req, res)
 })
+
+//refresh token
+nonAuthRouth.post("/auth/student/refresh/token", UserController.refreshToken)
+
+nonAuthRouth.post("/auth/lecturer/refresh/token", async (req, res) => {
+        return await UserController.refreshToken(req, res, Lecturer)
+})
 export {nonAuthRouth}

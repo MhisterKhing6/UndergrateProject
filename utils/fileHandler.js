@@ -54,8 +54,15 @@ let createFolder = async (folderPath) => {
         console.log(err)
         return null
      }
-    
 }
+
+let createStudentMarkSpace =  async (compilerEnviroment, assignemntId, studentId) => {
+    let baseFolder = path.resolve('./markingSpace')
+        let abs = path.join(baseFolder, compilerEnviroment,assignemntId, studentId)
+        let response = await createFolder(abs)
+        return response ? abs : null
+}
+
 let extenSion = (fileName) => {
     if (!fileName)
         return null
@@ -100,4 +107,4 @@ const deleteTaskFile = async (filePath) => {
     return await unlinkAsync(filePath)
 } 
 
-export {deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }
+export {createStudentMarkSpace, deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }

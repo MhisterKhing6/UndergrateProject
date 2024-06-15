@@ -2,7 +2,7 @@
 import jsonwebtoken from "jsonwebtoken";
 import config from "config"
 
-export const getToken = (detials) => {
+export const getToken = (detials, refresh=null) => {
     /**
      * getToken: generate a json web token
      * @param {object} detials: payload to generate token
@@ -10,7 +10,11 @@ export const getToken = (detials) => {
      * @returns {string}: json web token
      */
     let secreteKey = config.get("jwt.secrete")
-    let token = jsonwebtoken.sign(detials, secreteKey)
+    let token = null
+    if(refresh)
+        token = jsonwebtoken.sign(detials, secreteKey)
+    else 
+        token = jsonwebtoken.sign(detials, secreteKey, {expiresIn:86400*20})
     return token
 }
 

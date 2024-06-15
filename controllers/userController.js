@@ -1,11 +1,12 @@
 /**Controller for student endpoints */
 import { verifyMandatoryFields, validateEmail, validatePassword } from "../utils/verificationFunctions.js"
 import sha1 from 'sha1'
-import { getToken } from "../utils/authenticationFunctions.js"
+import { getToken, verifyToken } from "../utils/authenticationFunctions.js"
 import { Student } from "../models/users/student.js"
 import { generateSecretNumber } from "../utils/DatesManipulations.js"
 import { VerifyEmail } from "../models/verifications/emailVerication.js"
 import { sendVerification } from "../utils/emailHandler.js"
+import { Lecturer } from "../models/users/lecturer.js"
 
 export class UserController {
     static register = async (req, res, model ) => {
@@ -101,7 +102,8 @@ export class UserController {
                 if(user.password === sha1(loginDetials.password)) {
                     //generate json web token
                     let token = getToken({id: user.id, email:user.email})
-                    res.status(200).json({token})
+                    let refreshToekn = getToken({"id":user.id})
+                    res.status(200).json({token,"refresh_token": refreshToekn})
                 } else {
                     return res.status(401).json({"reason" : "wrong password"})
                 }
@@ -112,6 +114,27 @@ export class UserController {
         
     }
 
+    static refreshToken = async (req, res, model=false) => {
+        //return new token
+        let refreshToken = req.body.refresh_token
+        if(!refreshToken)
+            return res.status(400).json({"reason": "requires token"})
+        //verify token
+        let userId = verifyToken(refreshToken)
+        if(!userId)
+            return res.status(401).json({"reson": "wrong token"})
+        let user = null
+        if(model === Lecturer) {
+            user = await Lecturer.findByPk(userId.id)
+        }
+        else
+            user = await Student.findByPk(userId.id)
+        if(!user)
+            return res.status(400).json({"reason": "user not found"})
+        //generate new token and send
+        let newToken = getToken({'id': user.id, 'email': user.email})
+        return res.status(200).json({token:newToken, 'refresh_token':refreshToken})
+    }
     static me = async (req, res) => {
         //return user details
         if (req.user.studentId)
