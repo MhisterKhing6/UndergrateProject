@@ -1,17 +1,11 @@
 /**Controller for student endpoints */
-import { verifyMandatoryFields, validateEmail, validatePassword } from "../utils/verificationFunctions.js"
-import sha1 from 'sha1'
-import { getToken } from "../utils/authenticationFunctions.js"
-import { Student } from "../models/users/student.js"
-import { Assignment, AssignmentClasses, Class, Compiler, Course, Lecturer, Task } from "../models/relationship/relations.js"
-import { json } from "sequelize"
+import { Assignment, AssignmentClasses, AssignmentResult, Class, Compiler, Course, Lecturer, Task, TaskResult } from "../models/relationship/relations.js"
 import { Op } from '@sequelize/core';
 import { createStudentMarkSpace, deletFolder, writeToFile } from "../utils/fileHandler.js"
 import path from "path"
 import {compileScripts} from "../utils/compileScripts.js"
 import { cloneRepository, repositoryLink } from "../utils/submissionFunctions.js"
 import { checkIfResulstsFileExits, sanitizeResults } from "../utils/markingHelperFunction.js"
-import { unlink } from "fs"
 export class StudentController {
 
     static assignments = async (req, res) => {
@@ -315,7 +309,7 @@ export class StudentController {
              return res.status(400).json({"message": compileOutput.message, type:1})
          //check if the student code  compiled successfully
          if(compileOutput.compileResponse.stderr) // type: 2 errors represent errros occured during compilation/ such as file not found
-             return res.status(400).json({"message": compileOutput.compileResponse.stderr, type:2})
+             return res.status(400).json({"message": compileOutput.compileResponse.stderr.replaceAll(markSpacePath, ""), type:2})
          //check to see if result file is given
          let lecturer = await Lecturer.findByPk(asignment.LecturerId)
          let resultFile = await checkIfResulstsFileExits(markSpacePath, lecturer.email, asignment.title,task.number)
@@ -327,6 +321,30 @@ export class StudentController {
             }
          //start marking here
          let studentMarkResult = await sanitizeResults(markSpacePath)
+         //get mark object
+         let markobject = studentMarkResult[studentMarkResult.length -1] //get mark objec
+         //save option here
+         let savedTaskResult = await TaskResult.findOne({where: {TaskId:task.id}})
+         let totallAssResult = await AssignmentResult.findOne({where: {StudentId:req.user.id, AssignmentId:task.AssignmentId}})
+         if(!savedTaskResult) {
+            //save new entry in the database
+            let resultObject = {StudentId:req.user.id, TaskId:task.id, AssignmentId:task.AssignmentId, mark:markobject.mark, completion:markobject.completion} //create result for task object
+            if(totallAssResult){
+                totallAssResult.mark += markobject.mark
+            }else {
+                totallAssResult = AssignmentResult.build({StudentId:req.user.id, mark:markobject.mark, AssignmentId:task.AssignmentId})
+            }
+            await Promise.all([totallAssResult.save(), TaskResult.create(resultObject)])
+         } else {
+            //check if prev mark is creater than cureent mark
+            if(savedTaskResult.mark < markobject.mark)
+               {
+                totallAssResult += (markobject.mark - savedTaskResult.mark)
+                savedTaskResult.mark = markobject.mark
+                await Promise.all([totallAssResult.save(), savedTaskResult.save()])
+               }
+         }
+         await deletFolder(markSpacePath)
          return res.status(200).json(studentMarkResult)
         }
 }

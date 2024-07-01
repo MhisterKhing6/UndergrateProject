@@ -12,6 +12,8 @@ import { ResetPasswordDb } from "../verifications/passwordsReset.js";
 import { DataTypes } from "sequelize";
 import { Course } from "../programs/course.js";
 import { AssignmentRequirement } from "../assignment/assignmentRequirements.js";
+import { TaskResult } from "../results/tasksResults.js";
+import { AssignmentResult } from "../results/assignmentResults.js";
 
 const AssignmentClasses = databaseConnection.define('AssignmentClasses', {
     ClassId: {
@@ -104,5 +106,24 @@ Task.belongsTo(Assignment, {constraints: false})
 Compiler.hasMany(Assignment,  {constraints: false})
 Assignment.belongsTo(Compiler)
 
+//relationship between student TaskResult
+Student.hasMany(TaskResult, {constraints:false})
+TaskResult.belongsTo(Student, {constraints:false})
+//RelationShip between taskResult and Task
+Task.hasMany(TaskResult, {constraints:false})
+TaskResult.belongsTo(Task, {constraints:false})
+//RelationShip between assignment and Task result
+Assignment.hasMany(TaskResult, {constraints:false})
+TaskResult.belongsTo(Assignment, {constraints:false})
+/////
+//relationship between student and assignment results
+Student.hasMany(AssignmentResult,{constraints:false} )
+AssignmentResult.belongsTo(Student, {constraints:false})
+
+//relationship Assignment student and assignment results
+Assignment.hasMany(AssignmentResult,{constraints:false} )
+AssignmentResult.belongsTo(Assignment, {constraints:false})
+
+
 databaseConnection.sync({alter: true})
-export {ClassCourses, Course, AssignmentClasses,ResetPasswordDb,VerifyEmail,Task, Lecturer, Assignment, Compiler, Student, Program, Class, AssignmentRequirement }
+export {TaskResult, AssignmentResult, ClassCourses, Course, AssignmentClasses,ResetPasswordDb,VerifyEmail,Task, Lecturer, Assignment, Compiler, Student, Program, Class, AssignmentRequirement }

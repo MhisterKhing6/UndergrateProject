@@ -37,7 +37,6 @@ const compileScripts = {
                 let status = checkSolutionFile(workSpace, solutionPaths)
                 if(status.error)
                     return status
-                console.log(status.solutionPath)
                 if(!shell.which("g++"))
                     {
                         console.log("g++ not installed")

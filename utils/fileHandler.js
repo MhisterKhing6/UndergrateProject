@@ -1,11 +1,12 @@
 import { promisify } from "util"
-import { readFile, writeFile, existsSync, mkdir, unlink } from "fs"
+import { rm, readFile, writeFile, existsSync, mkdir, unlink } from "fs"
 import { v4 } from "uuid"
 import path from "path"
 const readFileAsync = promisify(readFile)
 const writeFileAsyc = promisify(writeFile)
 const mkdirAsync =    promisify(mkdir)
 const unlinkAsync =   promisify(unlink)
+const rmAsync = promisify(rm)
 
 
 const encodeBase64 = async (buffer) => {
@@ -96,7 +97,7 @@ const saveTaskFile = async ({data, ext}, assId, taskId, type ) => {
     return fileSavedStatus
 }
 const deletFolder = async (path) => {
-    await unlinkAsync(path)
+    await rmAsync(path, {recursive:true, force:true})
 }
 
 const readTaskFile = async (filePath) => {
