@@ -16,7 +16,10 @@ Task.init({
     examples: {
         type: DataTypes.TEXT, allowNull: true
     },
-    solutionScriptPath : {
+    studentSolutionFileNames: {
+        type: DataTypes.TEXT, allowNull: false
+    },
+    testFile : {
         type: DataTypes.STRING, allowNull: false
     },
      id: {// uniquly identify the task

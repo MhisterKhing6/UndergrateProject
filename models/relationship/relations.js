@@ -11,6 +11,7 @@ import { VerifyEmail } from "../verifications/emailVerication.js";
 import { ResetPasswordDb } from "../verifications/passwordsReset.js";
 import { DataTypes } from "sequelize";
 import { Course } from "../programs/course.js";
+import { AssignmentRequirement } from "../assignment/assignmentRequirements.js";
 
 const AssignmentClasses = databaseConnection.define('AssignmentClasses', {
     ClassId: {
@@ -64,6 +65,9 @@ VerifyEmail.belongsTo(Lecturer, {constraints: false})
 Program.hasMany(Class,  {constraints: false, onDelete:"CASCADE"})
 Class.belongsTo(Program)
 
+//realtionship between assignments and requirements
+Assignment.hasMany(AssignmentRequirement, {constraints:false, onDelete:"CASCADE"})
+AssignmentRequirement.belongsTo(Assignment)
 //relationship between student and program
 Program.hasMany(Student,  {constraints: false, onDelete:"CASCADE"})
 Student.belongsTo(Program)
@@ -96,9 +100,9 @@ Course.belongsToMany(Class, {through:ClassCourses, constraints: false})
 Assignment.hasMany(Task,  {constraints: false})
 Task.belongsTo(Assignment, {constraints: false})
 
-//relations between task and compiler
-Compiler.hasMany(Task,  {constraints: false})
-Task.belongsTo(Compiler)
+//relations between Assignment and compiler
+Compiler.hasMany(Assignment,  {constraints: false})
+Assignment.belongsTo(Compiler)
 
 databaseConnection.sync({alter: true})
-export {ClassCourses, Course, AssignmentClasses,ResetPasswordDb,VerifyEmail,Task, Lecturer, Assignment, Compiler, Student, Program, Class }
+export {ClassCourses, Course, AssignmentClasses,ResetPasswordDb,VerifyEmail,Task, Lecturer, Assignment, Compiler, Student, Program, Class, AssignmentRequirement }

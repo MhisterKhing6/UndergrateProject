@@ -3,11 +3,15 @@ import { verifyMandatoryFields, validateEmail, validatePassword } from "../utils
 import sha1 from 'sha1'
 import { getToken } from "../utils/authenticationFunctions.js"
 import { Student } from "../models/users/student.js"
-import { Assignment, AssignmentClasses, Class, Compiler, Course, Task } from "../models/relationship/relations.js"
+import { Assignment, AssignmentClasses, Class, Compiler, Course, Lecturer, Task } from "../models/relationship/relations.js"
 import { json } from "sequelize"
 import { Op } from '@sequelize/core';
-import { createStudentMarkSpace, writeToFile } from "../utils/fileHandler.js"
+import { createStudentMarkSpace, deletFolder, writeToFile } from "../utils/fileHandler.js"
 import path from "path"
+import {compileScripts} from "../utils/compileScripts.js"
+import { cloneRepository, repositoryLink } from "../utils/submissionFunctions.js"
+import { checkIfResulstsFileExits, sanitizeResults } from "../utils/markingHelperFunction.js"
+import { unlink } from "fs"
 export class StudentController {
 
     static assignments = async (req, res) => {
@@ -213,7 +217,7 @@ export class StudentController {
             attributes: [], 
             include: {
                 model:Task,
-                attributes: {exclude: ['createdAt', 'updatedAt', 'solutionScriptPath']},
+                attributes: {exclude: ['createdAt', 'updatedAt', 'testFile']},
             },
             order: [[{model:Task}, "number", "ASC"]]
         })
@@ -224,34 +228,105 @@ export class StudentController {
         return res.status(200).json(response)
     }
 
+    static submitAssignmentGihub = async (req, res) => {
+        /**
+         * summiteAssignmentGithu : clone student assignment from github
+         * req: http request object
+         * res: http response object
+         */
+        let detials = req.body
+        //check for required fields
+        if(!(detials.taskId)) {
+            return res.status(400).json({"message": "fields missing"})
+        }
+        //get assignment id from task
+        let task = await Task.findByPk(detials.taskId)
+        if(!task)
+            return res.status(400).json({"message": "task not found"})
+        if(!req.user.githubUserName)
+            return res.status(400).json({"message": "github username no given"})
+        let asignment = await Assignment.findByPk(task.AssignmentId, {include:{model:Compiler}})
+        if(!asignment)
+            return res.status(400).json({"message": "cant retrieve assignemnt"})
+        //get compiler id from assignment
+        let markSpacePath = await createStudentMarkSpace(asignment.Compiler.enviroment,task.AssignmentId, req.user.id)
+        if(!markSpacePath)
+            return res.status(500).json({"message": "internal error contact backen adminstrator"})
+        //get repoitory link
+        let link = repositoryLink(req.user.githubUserName, asignment.repository)
+        //clone repository
+        let cloningRespone = await cloneRepository(link, markSpacePath)
+        if(cloningRespone.code !== 0)
+            return res.status(400).json({"message": "repository not found"})
+
+        //compute marks here
+        let compileFunction = await compileScripts[Assignment.Compiler.name]
+        if(!compileFunction)
+             return res.status(501).json({"messages": "compile function not found"})
+        //generate result of test and mark here
+        let compileOutput = await compileFunction(task.testFile, markSpacePath, task.studentSolutionFileNames)
+        if(compileOutput.error) //type: 1 errors represent error that occured b4 compilation
+            return res.status(400).json({"message": compileOutput.message, type:1})
+        //check if the student code  compiled successfully
+        if(compileOutput.response.stderr) // type: 2 errors represent errros occured during compilation
+            return res.status(400).json({"message": compileOutput.response.stderr, "type": "compile error", type:2})
+        //check to see if results is given
+        console.log("implement marking here")
+        return res.status(501).json({"message": "not implemented"})
+    }
+
     static submitAssignmentFile = async (req, res) => {
         /**
          * summiteAssignmentFile : submit student assignment as file
          * req: http request object
          * res: http response object
          */
-        let detials = req.body
+        let detials = req.body// format {taskId, codes: [{code, fileName}]}
         //check for required fields
-        if(!(!detials.code && detials.fileName && detials.taskId)) {
+        if(!(detials.codes, detials.taskId)) {
             return res.status(400).json({"message": "fields missing"})
         }
-        //get compilerId from task
+        //get assignment id from task
         let task = await Task.findByPk(detials.taskId)
-        if(task)
+        if(!task)
             return res.status(400).json({"message": "task not found"})
-        let compiler = await Compiler.findByPk(task.CompilerId)
-        //create the script in student marking space
-        let markSpacePath = await createStudentMarkSpace(compiler.enviroment,task.AssignmentId, req.user.id)
+        let asignment = await Assignment.findByPk(task.AssignmentId, {include:{model:Compiler}})
+
+        if(!asignment)
+            return res.status(400).json({"message": "cant retrieve assignemnt"})
+        //get compiler id from assignment
+        let markSpacePath = await createStudentMarkSpace(asignment.Compiler.enviroment,task.AssignmentId, req.user.id)
         if(!markSpacePath)
             return res.status(500).json({"message": "internal error contact backen adminstrator"})
         //good
         //creat student code in path
-        let response = await writeToFile(path.join(markSpacePath, detials.fileName))
-        if(!response)
-            return res.status(500).json({"message": "internal error couldnt create student script"})
-        //compute marks here
-        return res.status(501).json({"message": "not implemented"})
-
-
-    }
+        for(const studentCode of detials.codes) {
+            let response = await writeToFile(path.join(markSpacePath, studentCode.fileName), studentCode.code)
+            if(!response)
+                return res.status(500).json({"message": "internal error couldnt create student script"})
+        }
+         //compile codes here
+         let compileFunction = compileScripts[asignment.Compiler.name]
+         if(!compileFunction)
+              return res.status(501).json({"messages": "compile function not found"})
+         //generate result of test and mark here
+         let compileOutput = await compileFunction(task.testFile, markSpacePath, task.studentSolutionFileNames)
+         if(compileOutput.error) //type: 1 errors represent error that occured b4 compilation
+             return res.status(400).json({"message": compileOutput.message, type:1})
+         //check if the student code  compiled successfully
+         if(compileOutput.compileResponse.stderr) // type: 2 errors represent errros occured during compilation/ such as file not found
+             return res.status(400).json({"message": compileOutput.compileResponse.stderr, type:2})
+         //check to see if result file is given
+         let lecturer = await Lecturer.findByPk(asignment.LecturerId)
+         let resultFile = await checkIfResulstsFileExits(markSpacePath, lecturer.email, asignment.title,task.number)
+         if(!resultFile)
+            {    
+                asignment.stop = true
+                await asignment.save()
+                return res.status(400).json({"message": "error in generatig meta data for student grading, assignment is now close, contact lecturer for fix, this is not student fault"})
+            }
+         //start marking here
+         let studentMarkResult = await sanitizeResults(markSpacePath)
+         return res.status(200).json(studentMarkResult)
+        }
 }

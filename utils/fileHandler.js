@@ -32,7 +32,6 @@ let writeToFile= async (path, binary) => {
 
 const readFromFile = async (filePath) => {
     //return the data and the path of the file
-    console.log(filePath)
     if(existsSync(filePath)) {
         try {
             let file = await readFileAsync(filePath)
@@ -48,7 +47,7 @@ const readFromFile = async (filePath) => {
 let createFolder = async (folderPath) => {
     //create folder
      try {
-            let response =  await mkdirAsync(folderPath , {recursive: true})
+            await mkdirAsync(folderPath , {recursive: true})
             return {folderPath, status:1}
      } catch(err) {
         console.log(err)
@@ -57,7 +56,7 @@ let createFolder = async (folderPath) => {
 }
 
 let createStudentMarkSpace =  async (compilerEnviroment, assignemntId, studentId) => {
-    let baseFolder = path.resolve('./markingSpace')
+    let baseFolder = path.join(path.resolve("."), "markingSpace")
         let abs = path.join(baseFolder, compilerEnviroment,assignemntId, studentId)
         let response = await createFolder(abs)
         return response ? abs : null
@@ -96,6 +95,9 @@ const saveTaskFile = async ({data, ext}, assId, taskId, type ) => {
     //file path
     return fileSavedStatus
 }
+const deletFolder = async (path) => {
+    await unlinkAsync(path)
+}
 
 const readTaskFile = async (filePath) => {
     //read the  content of the file
@@ -107,4 +109,4 @@ const deleteTaskFile = async (filePath) => {
     return await unlinkAsync(filePath)
 } 
 
-export {createStudentMarkSpace, deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }
+export {deletFolder, createStudentMarkSpace, deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }

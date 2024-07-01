@@ -1,27 +1,16 @@
-/** bash operations funcitons */
-import shell from "shelljs"
-import { createStudentMarkSpace } from "../utils/fileHandler.js"
 
-const cloneGithub  =  async (compilerEnviroment, assignemntId,studentId, link=null) => {
-    //clone from github repositorycd
-    if(!shell.which('git')) {
-        console.log("git is not installed")
-    } else {
-        //create folder
-        let abs = await createStudentMarkSpace(compilerEnviroment,assignemntId, studentId)
-        if(!abs) 
-            return null
 
-        let cdResponse = shell.cd(abs)
-        if(cdResponse.code !== 0)
-            return null 
-        let cloneRes = shell.exec(`git clone ${link}`)
-        if(cloneRes.code !== 0) 
-            return {code:cloneRes.code, abs:""} 
-        return {code:0, abs}       
-        
-    }
+
+const runTest = async (runCodes, runScript, markSpace)=> {
+    let codes = `${runCodes} ${runScript}`
+    //move to run directory
+    let response = shell.cd(markSpace)
+    if(response.code !== 0)
+        return null
+    //run execution codes
+    let output = shell.exec(codes)
+    return output
+
 }
 
-shell.cd("./markingSpace/python")
-shell.exec("python3 new.py")
+export {runTest }

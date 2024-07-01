@@ -10,22 +10,6 @@ Assignment.init({
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
-    plagiarism: { // indicate if the mode of submission for assignment will be github
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
-    documentation: { // indicate if the mode of submission for assignment will be github
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
-    codingStandards: { // indicate if the mode of submission for assignment will be github
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
-    readme: { // indicate if the mode of submission for assignment will be github
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
     repository: {// path in the 
         type: DataTypes.STRING, allowNull: true
     },
@@ -40,16 +24,12 @@ Assignment.init({
         type: DataTypes.DATE,
         allowNull: false
     },
-    open: { // indicate if assignment is open for submission
+    stop: { // indicate if assignment is open for submission
         type:DataTypes.BOOLEAN,
         defaultValue: false
     },
      objectives: {// the objective for the assignment
          type: DataTypes.STRING, allowNull: true
-     },
-     plagiarism: { // if plagiarism check should be allowed
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
      },
      id: {// uniquly identify the assigemtn
         type: DataTypes.UUID,

@@ -84,3 +84,10 @@ studentRoute.get("/close/course/assignments/:courseId", StudentController.closeC
  */
 studentRoute.get("/tasks/assignment/:assId", StudentController.assignmentTasks)
 export {studentRoute}
+
+/**
+ * submit student assignment file
+ * method: post
+ * domain restricted to student
+ */
+studentRoute.post("/submit/task/file", StudentController.submitAssignmentFile)

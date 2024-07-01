@@ -2,6 +2,7 @@ import hbs from 'nodemailer-express-handlebars'
 import nodemailer  from 'nodemailer'
 import path from 'path';
 import server from "config"
+import { title } from 'process';
 
 // initialize nodemailer
 let transporter = nodemailer.createTransport(
@@ -65,7 +66,25 @@ const sendResetPassword  = async (user, emailDetials) => {
   }
 }
 
+const notifyLecturer  = async (lecturerEmail,assTitle, questionNumber) => {
+  const mailOptions = {
+    from: `"Auto Code Grader" <${server.email.email}>`, // sender address
+    template: "notifyLecturer", // the name of the template file, i.e., email.handlebars
+    to: lecturerEmail,
+    subject: `cant find result.txt during execution  ${assignement.title}`,
+    context: {
+      title: assTitle,
+      questionNumber : questionNumber,
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions)
+  } catch(err) {
+    console.log(`${err} \n sending email ${lecturerEmail}`)
+  }
+}
 
-export {sendVerification, sendResetPassword}
+
+export {sendVerification, sendResetPassword, notifyLecturer}
 
   

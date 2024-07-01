@@ -20,9 +20,6 @@ Compiler.init({
     version: { // version of the programming language
        type: DataTypes.STRING, allowNull: true
     },
-    installationCodes: { // commands use to install the compiler on the system 
-        type: DataTypes.STRING, allowNull: true
-     },
      requirement: {// requirement for student to take notice when doing assignment for programming language
         type: DataTypes.TEXT, allowNull: false,
      },
@@ -39,11 +36,7 @@ Compiler.init({
      },
      extension : {
       type: DataTypes.STRING, allowNull: false
-  },
-     runCodes : { // commands use to run the compiler with test scripts and lecturer test
-        type: DataTypes.STRING,
-        allowNull: true,
-     }
+  }
 }, {sequelize:databaseConnection})
 
 export {Compiler}

@@ -2,7 +2,7 @@
 controls assignment endpoints
 */
 
-import { Assignment, Compiler, AssignmentClasses, Task, Class } from "../models/relationship/relations.js"
+import { Assignment, Compiler, AssignmentClasses, Task, Class, AssignmentRequirement } from "../models/relationship/relations.js"
 import { deleteTaskFile, readTaskFile, saveTaskFile, writeToFile } from "../utils/fileHandler.js"
 import { verifyMandatoryFields } from "../utils/verificationFunctions.js"
 import { v4 } from "uuid"
@@ -19,10 +19,14 @@ class AssignmentSController {
         //create assignement
         try {
             //check if the assignemnt is open
-            if(new Date(assignmendetails.startDate) <= new Date())
-                assignmendetails.open = true
-
-            let response = await Assignment.create({...assignmendetails, LecturerId: req.user.id})
+            let assignmentObject = {"title": assignmendetails.title, "gitMode": assignmendetails.gitmode,
+                                    "objectives":assignmendetails.objectives, "CompilerId": assignmendetails.CompilerId,
+                                    "startDate":assignmendetails.startDate, "endDate":assignmendetails.endDate, "repository":assignmendetails.repository,
+                                    "ClassId": assignmendetails.ClassId, "CourseId": assignmendetails.CourseId
+            }
+            let response = await Assignment.create({...assignmentObject, LecturerId: req.user.id})
+            let assRequiremnt = await AssignmentRequirement.create({"plagiarism": assignmendetails.plagiarism, "documentation": assignmendetails.documentation, "codingStandard":assignmendetails.codingStandard, "readme":assignmendetails.readme})
+            await response.addAssignmentRequirement(assRequiremnt)
             //save to class
             await AssignmentClasses.create({"AssignmentId":response.id, "ClassId": assignmendetails.ClassId })
             return res.status(201).json({"created": true, "id": response.id})
@@ -79,7 +83,7 @@ class AssignmentSController {
         let details = req.body
         //check for right enteries
         let correctColumns = ['endDate', "startDate", "title", "objectives",  "plagiarism", "documentation", "codingStandards",
-                              'gitMode',"readme", "repository", "CourseId", "LecturerId"]
+                              'gitMode',"readme", "repository", "CourseId", "LecturerId", "CompilerId"]
         if(!details.id)
             return res.status(400).json({reason: "fields missing", missingFields: "id"})
         //get assignment by id
@@ -123,14 +127,18 @@ class AssignmentSController {
             return res.status(400).json({"reason": "fields missing", "missingFields": missingFields})
         //get task id
         let taskId = v4()
-        let file = await saveTaskFile({data:task.solutionScript, ext:task.ext}, task.AssignmentId, taskId, "Test Script")
+        let file = await saveTaskFile({data:task.solutionScript, ext:task.ext}, task.AssignmentId, taskId, "Test")
         //save the file to the database
         if(!file)
             return res.status(501).json({"reason": "cant save file"})
+        console.log(task.solutionPath)
         //save taskt
-        try {
-                let taskDb = await Task.create({id:taskId,requirement: task.requirement, examples:task.examples,
-                solutionScriptPath: file.filePath, AssignmentId:task.AssignmentId,number:task.number})
+        try {   
+                let taskDb = await Task.create({
+                                                id:taskId,requirement: task.requirement, examples:task.examples,
+                                                testFile: file.filePath, AssignmentId:task.AssignmentId,number:task.number,
+                                                studentSolutionFileNames:task.solutionPath
+                                              })
                 return res.status(201).json({"taskId": taskDb.id})
 
         }catch(err){
@@ -169,12 +177,12 @@ class AssignmentSController {
         //update right enteries
         for (const column of Object.keys(details)) {
             //exclude id and solutionPath
-            if(!(column === "id" || column ==="solutionScriptPath")) {
+            if(!(column === "id" || column ==="testFile")) {
                 if(correctColumns.includes(column)) {
                    //update information for entry
                    if(column === "solutionScript"){
                     //upldate the scolutionCript file
-                    let response = await writeToFile(taskEntry.solutionScriptPath, details.solutionScript)
+                    let response = await writeToFile(taskEntry.testFile, details.solutionScript)
                     if(!response)
                         return res.status(400).json({reason: "couldnt upadate script history"})
                    }  
@@ -200,7 +208,7 @@ class AssignmentSController {
         if(!task)
         return res.status(400).json({"reason": "couldnt find question"})
         //read solution script content
-        let solutionScript = await readTaskFile(task.solutionScriptPath)
+        let solutionScript = await readTaskFile(task.testFile)
         return res.status(200).json({number:task.number,id:task.id,examples:task.examples, requirement:task.requirement, solutionScript})
 
     }
@@ -217,7 +225,7 @@ class AssignmentSController {
         //delete enteries
         let id = req.params.id
         let entry = await Task.findByPk(id)  
-        deleteTaskFile(entry.solutionScriptPath)
+        deleteTaskFile(entry.testFile)
         await entry.destroy()
         return res.status(200).json({reason: "operation success"})
     }
