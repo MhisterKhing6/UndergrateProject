@@ -48,14 +48,12 @@ const sanitizeResults = async (workspace) => {
  if(markingOjbect.length === 0) 
         return null
  else {
-    let markStatus = markingOjbect[markingOjbect.length - 1]
-    let mark = parseFloat(markStatus.mark)
-    let completion = parseFloat(markStatus.completion)
-    if(!(mark && completion))
+    let markStatus = markingOjbect.pop()
+    markStatus.mark = parseFloat(markStatus.mark)
+    markStatus.completion = parseFloat(markStatus.completion)
+    if(markStatus.mark === NaN || markStatus.completion === NaN)
         return null
-    markingOjbect[markingOjbect.length - 1].mark = mark
-    markingOjbect[markingOjbect.length - 1].completion = completion
-    return markingOjbect
+    return {marks : markStatus, testResult:markingOjbect}
  }
 }
 

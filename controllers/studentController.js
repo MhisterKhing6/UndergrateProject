@@ -1,11 +1,12 @@
 /**Controller for student endpoints */
-import { Assignment, AssignmentClasses, AssignmentResult, Class, Compiler, Course, Lecturer, Task, TaskResult } from "../models/relationship/relations.js"
+import { Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, Compiler, Course, Lecturer, Task, TaskResult } from "../models/relationship/relations.js"
 import { Op } from '@sequelize/core';
 import { createStudentMarkSpace, deletFolder, writeToFile } from "../utils/fileHandler.js"
 import path from "path"
-import {compileScripts} from "../utils/compileScripts.js"
+import {checkSolutionFile, compileScripts} from "../utils/compileScripts.js"
 import { cloneRepository, repositoryLink } from "../utils/submissionFunctions.js"
 import { checkIfResulstsFileExits, sanitizeResults } from "../utils/markingHelperFunction.js"
+import { codingStandard } from "../utils/requirementScripts.js";
 export class StudentController {
 
     static assignments = async (req, res) => {
@@ -292,21 +293,46 @@ export class StudentController {
         let markSpacePath = await createStudentMarkSpace(asignment.Compiler.enviroment,task.AssignmentId, req.user.id)
         if(!markSpacePath)
             return res.status(500).json({"message": "internal error contact backen adminstrator"})
-        //good
+        let solutionFilNames = task.studentSolutionFileNames.split("**")
+        let studentGivenFileNames = [] //get student file names
+        for(const code of detials.codes){
+            studentGivenFileNames.push(code.fileName)
+        }
+        //check if all required files are given
+        for(const requireFile of solutionFilNames){
+            if(!studentGivenFileNames.includes(requireFile))
+                return res.status(400).json({"message": `${requireFile} not found`})
+        }
         //creat student code in path
         for(const studentCode of detials.codes) {
             let response = await writeToFile(path.join(markSpacePath, studentCode.fileName), studentCode.code)
             if(!response)
                 return res.status(500).json({"message": "internal error couldnt create student script"})
         }
+        let solutionFileList = checkSolutionFile(markSpacePath, task.studentSolutionFileNames, false)
          //compile codes here
+         let genRequirementMark = 0;
+         let genRequirementResult = []
+         let requirements   = await AssignmentRequirement.findAll({where: {AssignmentId:task.AssignmentId}})
+         if(true){
+            if(true)
+                {
+                    //run coding standard function
+                    let standardFunction = codingStandard[asignment.Compiler.name]
+                    if(standardFunction) {
+                        let result = await standardFunction(solutionFileList.solutionPath, markSpacePath)
+                        if(result.pass) {
+                            genRequirementMark += 5
+                        }
+                        genRequirementResult.push({"name": "coding Standard", ...result})
+                    }
+                }
+         }
          let compileFunction = compileScripts[asignment.Compiler.name]
          if(!compileFunction)
               return res.status(501).json({"messages": "compile function not found"})
          //generate result of test and mark here
-         let compileOutput = await compileFunction(task.testFile, markSpacePath, task.studentSolutionFileNames)
-         if(compileOutput.error) //type: 1 errors represent error that occured b4 compilation
-             return res.status(400).json({"message": compileOutput.message, type:1})
+         let compileOutput = await compileFunction(task.testFile, markSpacePath, solutionFileList.solutionPath)
          //check if the student code  compiled successfully
          if(compileOutput.compileResponse.stderr) // type: 2 errors represent errros occured during compilation/ such as file not found
              return res.status(400).json({"message": compileOutput.compileResponse.stderr.replaceAll(markSpacePath, ""), type:2})
@@ -321,30 +347,32 @@ export class StudentController {
             }
          //start marking here
          let studentMarkResult = await sanitizeResults(markSpacePath)
-         //get mark object
-         let markobject = studentMarkResult[studentMarkResult.length -1] //get mark objec
+         if(!studentMarkResult)
+            return res.status(501).json({"message": "error generating student meta data wrong format"})
+         //add marks obtain from coding standards
+         studentMarkResult.marks.mark += genRequirementMark
          //save option here
          let savedTaskResult = await TaskResult.findOne({where: {TaskId:task.id}})
          let totallAssResult = await AssignmentResult.findOne({where: {StudentId:req.user.id, AssignmentId:task.AssignmentId}})
          if(!savedTaskResult) {
             //save new entry in the database
-            let resultObject = {StudentId:req.user.id, TaskId:task.id, AssignmentId:task.AssignmentId, mark:markobject.mark, completion:markobject.completion} //create result for task object
+            let resultObject = {StudentId:req.user.id, TaskId:task.id, AssignmentId:task.AssignmentId, mark:studentMarkResult.marks.mark, completion:studentMarkResult.marks.completion} //create result for task object
             if(totallAssResult){
-                totallAssResult.mark += markobject.mark
+                totallAssResult.mark += studentMarkResult.marks.mark
             }else {
-                totallAssResult = AssignmentResult.build({StudentId:req.user.id, mark:markobject.mark, AssignmentId:task.AssignmentId})
+                totallAssResult = AssignmentResult.build({StudentId:req.user.id, mark:studentMarkResult.marks.mark, AssignmentId:task.AssignmentId})
             }
             await Promise.all([totallAssResult.save(), TaskResult.create(resultObject)])
          } else {
             //check if prev mark is creater than cureent mark
-            if(savedTaskResult.mark < markobject.mark)
+            if(savedTaskResult.mark < studentMarkResult.marks.mark)
                {
-                totallAssResult += (markobject.mark - savedTaskResult.mark)
-                savedTaskResult.mark = markobject.mark
+                totallAssResult += (studentMarkResult.marks.mark - savedTaskResult.mark)
+                savedTaskResult.mark = studentMarkResult.marks.mark
                 await Promise.all([totallAssResult.save(), savedTaskResult.save()])
                }
          }
          await deletFolder(markSpacePath)
-         return res.status(200).json(studentMarkResult)
+         return res.status(200).json({...studentMarkResult, genralRequirements: genRequirementResult})
         }
 }
