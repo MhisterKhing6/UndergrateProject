@@ -19,7 +19,7 @@ class AssignmentSController {
         //create assignement
         try {
             //check if the assignemnt is open
-            let assignmentObject = {"title": assignmendetails.title, "gitMode": assignmendetails.gitmode,
+            let assignmentObject = {"title": assignmendetails.title, "gitMode": assignmendetails.gitMode,
                                     "objectives":assignmendetails.objectives, "CompilerId": assignmendetails.CompilerId,
                                     "startDate":assignmendetails.startDate, "endDate":assignmendetails.endDate, "repository":assignmendetails.repository,
                                     "ClassId": assignmendetails.ClassId, "CourseId": assignmendetails.CourseId

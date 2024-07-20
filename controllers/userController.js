@@ -1,12 +1,15 @@
 /**Controller for student endpoints */
-import { verifyMandatoryFields, validateEmail, validatePassword } from "../utils/verificationFunctions.js"
 import sha1 from 'sha1'
-import { getToken, verifyToken } from "../utils/authenticationFunctions.js"
-import { Student } from "../models/users/student.js"
-import { generateSecretNumber } from "../utils/DatesManipulations.js"
-import { VerifyEmail } from "../models/verifications/emailVerication.js"
-import { sendVerification } from "../utils/emailHandler.js"
+import { Class } from "../models/programs/class.js"
+import { Program } from "../models/programs/program.js"
 import { Lecturer } from "../models/users/lecturer.js"
+import { Student } from "../models/users/student.js"
+import { VerifyEmail } from "../models/verifications/emailVerication.js"
+import { generateSecretNumber } from "../utils/DatesManipulations.js"
+import { getToken, verifyToken } from "../utils/authenticationFunctions.js"
+import { sendVerification } from "../utils/emailHandler.js"
+import { generateFileUrl, writeBinaryFile } from "../utils/fileHandler.js"
+import { validateEmail, validatePassword, verifyMandatoryFields } from "../utils/verificationFunctions.js"
 
 export class UserController {
     static register = async (req, res, model ) => {
@@ -19,7 +22,7 @@ export class UserController {
         let requiredDetials = ['email', 'password', 'name']
         let userDetails  = req.body;
         if(model === Student) {
-            requiredDetials.push("index", "ClassId", "ProgramId", "username")
+            requiredDetials.push("index", "ClassId", "ProgramId")
         } else {
             requiredDetials.push("lecturerId")
         }
@@ -48,8 +51,9 @@ export class UserController {
                     let saved = await user.save()
                     //verify email
                     let LecturerId, StudentId = null;
-                    if (model === Student) 
+                    if (model === Student) {
                         StudentId = user.id
+                    }
                     else 
                         LecturerId = user.id
                     let emailDetials = {secreteText: generateSecretNumber(), StudentId, LecturerId}
@@ -122,7 +126,7 @@ export class UserController {
         //verify token
         let userId = verifyToken(refreshToken)
         if(!userId)
-            return res.status(401).json({"reson": "wrong token"})
+            return res.status(401).json({"reason": "wrong token"})
         let user = null
         if(model === Lecturer) {
             user = await Lecturer.findByPk(userId.id)
@@ -137,14 +141,53 @@ export class UserController {
     }
     static me = async (req, res) => {
         //return user details
-        if (req.user.studentId)
+        if (req.user.studentId) {
+            let userClass = await Class.findByPk(req.user.ClassId, {attributes:['className']})
+            let program = await Program.findByPk(req.user.ProgramId, {attributes:['programName']})
             return res.status(200).json({
                 name:req.user.name,
+                "class":userClass.className,
+                program:program.programName,
+                profilePic : req.user.profileUrl,
+                studentId : req.user.studentId,
                 id:req.user.id,
                 email: req.user.email,
-                studentId : req.user.StudentId,
-                index: req.user.index
-            })
-        return res.status(200).json({name: req.user.name, id: req.user.id, email: req.user.email, lecturerId: req.user.lecturerId})
-    } 
+                studentId : req.user.studentId,
+                index: req.user.index,
+                githubUserName: req.user.githubUserName
+            }) }
+        return res.status(200).json({profilePic: req.user.profileUrl,name: req.user.name, id: req.user.id, email: req.user.email, lecturerId: req.user.lecturerId})
+    }
+
+    static update = async (req, res) => {
+        //request contains request object
+        //response contains response object
+        let userDetails = req.body
+        try {
+            if(!(userDetails.name || userDetails.profilePic || userDetails.githubUserName)) {
+                return res.status(400).json({"reason": "no fields given"})
+            if(userDetails.name)
+                req.user.name = userDetails.name
+            if(userDetails.githubUserName)
+                req.user.githubUserName = userDetails.githubUserName
+            }
+            if(userDetails.profilePic && userDetails.fileName)
+                {
+                    let encodedFile = userDetails.profilePic.split("base64,")[1]
+                    let saved = await writeBinaryFile(encodedFile,req.user.id, userDetails.fileName)
+                        if(saved) {
+                            req.user.profileUrl = generateFileUrl(saved.relativePath)
+                            req.user.profileDisk = saved.fullPath
+                        } else {
+                            await req.user.save()
+                            return res.status(501).json({"message": "couldn't save file"})
+                        }
+                }
+            await req.user.save()
+            res.status(200).json("updated")
+        }catch(error) {
+            console.log(error)
+            return res.status(501).json({"reason": "error"})
+        }
+    }
 }

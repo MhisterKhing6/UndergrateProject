@@ -18,12 +18,12 @@ authRouter.use(async (req, res, next) => {
     if(!userPayload.verified)
         return res.status(403).json({"reson": "wrong token"})
     let userInstance = null
-    if (type.toLocaleUpperCase() === "STUDENT")
+    if (type.toLocaleUpperCase() === "STUDENT") 
         userInstance = await Student.find({id:userPayload.id})
     else 
         userInstance = await Lecturer.find({id:userPayload.id})
     if(!userInstance)
-        return res.status(401).json({"reson": "user hasnt log in"})
+        return res.status(401).json({"reason": "seassion expired"})
     //check if users email match
     if(userInstance.email !== userPayload.email)
         return res.status(401).json({"reason": "wrong token"})
@@ -38,8 +38,12 @@ authRouter.use(async (req, res, next) => {
 authRouter.get("/me", async (req, res) => {
     return UserController.me(req, res)
 })
-
-
+/**
+ * update user info
+ * method: get
+ * domain: authenticated users
+ */
+authRouter.post("/update", UserController.update)
 /**
  * view task description
  * method: get

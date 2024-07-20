@@ -1,21 +1,21 @@
 /**Auth router for controllers */
-import { getAuthorizationtoken, verifyToken } from "../utils/authenticationFunctions.js";
-import {Student,  } from "../models/relationship/relations.js";
 import { Router } from "express";
 import { StudentController } from "../controllers/studentController.js";
+import { Student, } from "../models/relationship/relations.js";
+import { getAuthorizationtoken, verifyToken } from "../utils/authenticationFunctions.js";
 //get user login detailsl
 let studentRoute = Router()
 studentRoute.use(async (req, res, next) => {
     let token = getAuthorizationtoken(req)
     if (!token) {
-        return res.status(401).json({"reason": "user hasnt log in"})
+        return res.status(401).json({"reason": "no token given"})
     }
     let userPayload = verifyToken(token.token)
     if(!userPayload.verified)
-        return res.status(403).json({"reson": "wrong token"})
+        return res.status(403).json({"reason": "token expired"})
     let userInstance = await Student.find({id:userPayload.id})
     if(!userInstance)
-        return res.status(401).json({"reson": "user hasnt log in"})
+        return res.status(401).json({"reason": "user hasn't log in"})
     //check if users email match
     if(userInstance.email !== userPayload.email)
         return res.status(401).json({"reason": "wrong token"})
@@ -83,7 +83,7 @@ studentRoute.get("/close/course/assignments/:courseId", StudentController.closeC
  * domain: restricted
  */
 studentRoute.get("/tasks/assignment/:assId", StudentController.assignmentTasks)
-export {studentRoute}
+export { studentRoute };
 
 /**
  * submit student assignment file

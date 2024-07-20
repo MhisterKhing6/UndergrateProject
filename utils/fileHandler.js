@@ -1,6 +1,7 @@
 import { promisify } from "util"
 import { rm, readFile, writeFile, existsSync, mkdir, unlink } from "fs"
 import { v4 } from "uuid"
+import config from "config"
 import path from "path"
 const readFileAsync = promisify(readFile)
 const writeFileAsyc = promisify(writeFile)
@@ -14,6 +15,7 @@ const encodeBase64 = async (buffer) => {
     //buffer -> streams of objects
     let data = buffer.toString("base64")
     return data
+    
 }
 
 const decodeDataBase64 = async (base64) => {
@@ -21,8 +23,37 @@ const decodeDataBase64 = async (base64) => {
     return file
 }
 
+let writeBinaryFile = async (base64, userId, origName)=> {
+    try {
+    let file = await decodeDataBase64(base64)
+    //create relative filename for url
+    let relativePath = path.join("public","profilePics")
+    //create file name
+    let fileName = `${userId}${path.extname(origName)}`
+    //create full path folder
+    let fullPath = path.join(path.resolve("."),relativePath)
+    //create folder if not exist
+    if(!existsSync(fullPath))
+        await createFolder(fullPath)
+    //generate full file name with fileName
+    fullPath = path.join(fullPath, fileName)
+    //write the file to file
+    let obs = await writeToFile(fullPath, file)
+    //add file filename to relative path to generate url
+    relativePath = path.join(relativePath, fileName)
+    if(!obs)
+        return null
+    return {relativePath,fullPath}
+    }
+    catch(err) {
+        console.log(err)
+        return null
+    }
+}
 let writeToFile= async (path, binary) => {
     try {
+        if(existsSync(path))
+            await deleteTaskFile(path)
         await writeFileAsyc(path,binary)
         return path
     } catch(err) {
@@ -31,6 +62,13 @@ let writeToFile= async (path, binary) => {
     }
 }
 
+const generateFileUrl = (filePath) => {
+    let appHost = config.get("applicationInterface")
+    let host = process.env.HOST || appHost.host
+    let port = process.env.PORT || appHost.port
+
+    return `${appHost.protocol}://${host}:${port}/${filePath}`
+}
 const readFromFile = async (filePath) => {
     //return the data and the path of the file
     if(existsSync(filePath)) {
@@ -110,4 +148,4 @@ const deleteTaskFile = async (filePath) => {
     return await unlinkAsync(filePath)
 } 
 
-export {deletFolder, createStudentMarkSpace, deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }
+export {generateFileUrl, deletFolder, writeBinaryFile, createStudentMarkSpace, deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }

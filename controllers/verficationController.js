@@ -19,7 +19,7 @@ class VerifyController {
             userEmailDetails = await VerifyEmail.find({id})
         else 
             userEmailDetails = await ResetPasswordDb.find({id})
-        
+        console.log(userEmailDetails)
         if(!userEmailDetails) 
             return res.status(400).json({"verified": false, "reason": "verification details not found, probably user is not registerd"})
         //check if link has expired
@@ -53,7 +53,7 @@ class VerifyController {
     static resendEmail = async (req, res) => {
         let id = req.params.id
         let userEmailDetails = await VerifyEmail.findByPk(id)
-        if(!id) {
+        if(!userEmailDetails) {
             return res.status(401).json({"sent": "false", "reason": "user verficication details not found"})
         } 
         //get new random test

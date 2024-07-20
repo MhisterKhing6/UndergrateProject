@@ -14,8 +14,8 @@ let compiledPath = [] //to prevent compiling header files in c which will genera
 //check if the path exits
  for (let i = 0; i < fullSolutionPath.length; i++) {
     if(presence){
-    if(!existsSync(fullSolutionPath[i]))
-        return {"allGiven": trufalsee, "message": `file ${solutionFiles[i]} not foud`}
+    if(!existsSync(fullSolutionPath[i])) //check if student submission contains the required files
+        return {"allGiven": false, "message": `file ${solutionFiles[i]} not found`}
     }
     if(path.extname(fullSolutionPath[i]) !== '.h')
         compiledPath.push(fullSolutionPath[i])

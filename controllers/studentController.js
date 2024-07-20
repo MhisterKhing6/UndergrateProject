@@ -1,12 +1,12 @@
 /**Controller for student endpoints */
-import { Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, Compiler, Course, Lecturer, Task, TaskResult } from "../models/relationship/relations.js"
 import { Op } from '@sequelize/core';
-import { createStudentMarkSpace, deletFolder, writeToFile } from "../utils/fileHandler.js"
-import path from "path"
-import {checkSolutionFile, compileScripts} from "../utils/compileScripts.js"
-import { cloneRepository, repositoryLink } from "../utils/submissionFunctions.js"
-import { checkIfResulstsFileExits, sanitizeResults } from "../utils/markingHelperFunction.js"
+import path from "path";
+import { Assignment, AssignmentRequirement, AssignmentResult, Class, Compiler, Course, Lecturer, Task, TaskResult } from "../models/relationship/relations.js";
+import { checkSolutionFile, compileScripts } from "../utils/compileScripts.js";
+import { createStudentMarkSpace, deletFolder, writeToFile } from "../utils/fileHandler.js";
+import { checkIfResulstsFileExits, sanitizeResults } from "../utils/markingHelperFunction.js";
 import { codingStandard } from "../utils/requirementScripts.js";
+import { cloneRepository, repositoryLink } from "../utils/submissionFunctions.js";
 export class StudentController {
 
     static assignments = async (req, res) => {
@@ -45,6 +45,8 @@ export class StudentController {
         //get all assignment of the student that are open for submission
         let openAss = await Class.findAll( {where:{id:ClassId},raw:true, nest:true,
             attributes: [],
+            raw:true, 
+            nest:true,
             include:{ model:Assignment, 
                 where: {
                 startDate: {
@@ -54,11 +56,14 @@ export class StudentController {
                     [Op.gte]:Date.now()
                 },
                 },
-                attributes: {exclude: ['createdAt', "upatedAt"]},
+                include: [
+                    {model:AssignmentResult, required:false, where: {StudentId:req.user.id}, attributes:['mark']},
+                    {model:Course, attributes:['courseCode']}],
+                attributes: ['title', "startDate", 'endDate', "id"],
+                order: [['endDate', 'DESC']]    
             },
             order: [[{model:Assignment}, 'endDate', 'DESC'] ]
         })
-
         //find all the assignment that are open
         let response = openAss.map(val => {
             delete val.Assignments.AssignmentClasses
@@ -69,7 +74,7 @@ export class StudentController {
 
     static closeAssignments= async (req, res) => {
         /**
-         * closeAssignments retrun all asssignments that are close
+         * closeAssignments return all asssignments that are close
          * req: http request object
          * res: http response object
          */
@@ -140,12 +145,20 @@ export class StudentController {
                   [Op.gte]:Date.now()
                 }
             },
+            include: [
+                {model:AssignmentResult, where: {StudentId:req.user.id}, attributes:['mark']},
+                {model:Compiler, attributes:['name']}
+            ],
             raw:true, 
             nest:true,
-            attributes: {exclude: ['createdAt', "upatedAt"]},
+            attributes: ['title', "stardDate", 'endDate'],
             order: [['endDate', 'DESC']]
 
         })
+        //find student Score
+        let studentScore = await AssignmentResult.findOne({where:{
+            StudentId:req.user.id, AssignmentId
+        }})
         //find all the assignment that are open
         return res.status(200).json(assCourse)
     }
@@ -208,19 +221,29 @@ export class StudentController {
 
         let assId = req.params.assId
         //get all the course of a class
-        let tasks = await Assignment.findAll( {where:{id:assId},raw:true, nest:true,
-            attributes: [], 
-            include: {
-                model:Task,
-                attributes: {exclude: ['createdAt', 'updatedAt', 'testFile']},
-            },
-            order: [[{model:Task}, "number", "ASC"]]
+        let ass = await Assignment.findOne( {where:{id:assId},raw:true, nest:true,
+            attributes: ["title", "objectives", "id", "gitMode"], 
+            include: {model:Compiler, attributes:['name', 'requirement', 'setupLink', 'extension']}, 
         })
-        let response = tasks.map(val => {
-            return val.Tasks
+        if(!ass)
+            return res.status(400).json({"message": "not found"})
+        let tasks = await Task.findAll(
+            {raw:true, nest:true , where: {AssignmentId:assId}, order:[["number","ASC"]],
+            include : {model:TaskResult, attributes:["mark"], where: {StudentId:req.user.id}, required: false}
+            })
+        let assReq = await AssignmentRequirement.findOne({
+            raw:true, nest:true, 
+            where:{AssignmentId:assId},
+            attributes: ['readme', 'plagiarism', 'documentation', 'codingStandard']
+            
+        
         })
+        let score = await AssignmentResult.findOne({where:{StudentId:req.user.id, AssignmentId:assId}, raw:true, nest:true, attributes:["mark"]})
+        ass.tasks = tasks
+        ass.assReq = assReq
+        ass.score = score
         //find all the assignment that are open
-        return res.status(200).json(response)
+        return res.status(200).json(ass)
     }
 
     static submitAssignmentGihub = async (req, res) => {
@@ -349,30 +372,36 @@ export class StudentController {
          let studentMarkResult = await sanitizeResults(markSpacePath)
          if(!studentMarkResult)
             return res.status(501).json({"message": "error generating student meta data wrong format"})
+         const lesserThanPrevMark = true
          //add marks obtain from coding standards
-         studentMarkResult.marks.mark += genRequirementMark
+         studentMarkResult.marks += genRequirementMark
          //save option here
-         let savedTaskResult = await TaskResult.findOne({where: {TaskId:task.id}})
+         let savedTaskResult = await TaskResult.findOne({where: {TaskId:task.id, StudentId:req.user.id}})
          let totallAssResult = await AssignmentResult.findOne({where: {StudentId:req.user.id, AssignmentId:task.AssignmentId}})
+         //if not already saved results
          if(!savedTaskResult) {
-            //save new entry in the database
-            let resultObject = {StudentId:req.user.id, TaskId:task.id, AssignmentId:task.AssignmentId, mark:studentMarkResult.marks.mark, completion:studentMarkResult.marks.completion} //create result for task object
+            //form new results entry in the database
+            lesserThanPrevMark = false
+            let resultObject = {StudentId:req.user.id, TaskId:task.id, AssignmentId:task.AssignmentId, mark:studentMarkResult.marks, completion:studentMarkResult.marks.completion} //create result for task object
+            //check if the student has saved results
             if(totallAssResult){
-                totallAssResult.mark += studentMarkResult.marks.mark
+                totallAssResult.mark += studentMarkResult.marks
             }else {
-                totallAssResult = AssignmentResult.build({StudentId:req.user.id, mark:studentMarkResult.marks.mark, AssignmentId:task.AssignmentId})
+                totallAssResult = AssignmentResult.build({StudentId:req.user.id, mark:studentMarkResult.marks, AssignmentId:task.AssignmentId})
             }
             await Promise.all([totallAssResult.save(), TaskResult.create(resultObject)])
          } else {
-            //check if prev mark is creater than cureent mark
-            if(savedTaskResult.mark < studentMarkResult.marks.mark)
+            //check if prev mark is creater than current mark
+            if(savedTaskResult.mark < studentMarkResult.marks)
                {
-                totallAssResult += (studentMarkResult.marks.mark - savedTaskResult.mark)
-                savedTaskResult.mark = studentMarkResult.marks.mark
+                lesserThanPrevMark = false
+                totallAssResult.mark += (studentMarkResult.marks - savedTaskResult.mark)
+                savedTaskResult.mark = studentMarkResult.marks
                 await Promise.all([totallAssResult.save(), savedTaskResult.save()])
                }
          }
          await deletFolder(markSpacePath)
-         return res.status(200).json({...studentMarkResult, genralRequirements: genRequirementResult})
+         console.log(genRequirementMark)
+         return res.status(200).json({...studentMarkResult, genralRequirements: genRequirementResult, lesserThanPrevMark, assignmentScore:totallAssResult.mark})
         }
 }

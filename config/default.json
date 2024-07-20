@@ -9,7 +9,8 @@
     },
     "applicationInterface": {
         "port": 3005,
-        "host": "localhost"
+        "host": "localhost",
+        "protocol":"http"
     },
     "jwt" : {
         "secrete": "9%8%7521@#ks%232423"

@@ -18,42 +18,43 @@ const checkIfResulstsFileExits = async (markSpace, lecturerEmail,assTitle, quest
 const sanitizeResults = async (workspace) => {
  const content = await readFromFile(path.join(workspace, "result.txt"))
  //convert content to lines
- let tasks = content.split(";")
- let formated = ""
- let markingOjbect = []
+ let tasks = content.split(";") // get the task in as list
+ let formated = "" // formated
+ let markingOjbect = [] //get task as marks
  for(let i = 0; i< tasks.length; i++) {
+    // check for format such as multiple spacing and multiple lines
     tasks[i] = tasks[i].replace(/ {2, }/g,"" ).replace(/\n{1,}/g, "\n").replace(/\n$/g, "")
-    let entries = tasks[i].split('\n')
-    let entryOjbect = {}
+    let entries = tasks[i].split('\n') // split each test to paramters and values
+    let entryOjbect = {} // entries represent parameters=value
     for(let j = 0; j < entries.length; j++)
         {
-            formated = entries[j].trim()
-            if(formated.length !== 0 && formated.includes("="))  {
+            formated = entries[j].trim() //ensure no space
+            if(formated.length !== 0 && formated.includes("="))  { //split entry to parameters and values to form object
                 let [option, value]= formated.split("=")
                 option = option.trim().toLocaleLowerCase()
                 value = value.trim().toLocaleLowerCase()
-                if(option === "status") {
+                if(option === "status") { //convert status to actual boolean
                     if(value.startsWith("p"))
                         value = true
                     else
                         value = false
                 }
                     
-                entryOjbect[option] = value
+                entryOjbect[option] = value //form object
             }
         }
-    markingOjbect.push(entryOjbect)
+    markingOjbect.push(entryOjbect) //adding to mark object
  }
-//check if the resultrs are right
- if(markingOjbect.length === 0) 
+ console.log(markingOjbect)
+//check if the results are right
+ if(markingOjbect.length === 0) // if no test return null
         return null
  else {
-    let markStatus = markingOjbect.pop()
-    markStatus.mark = parseFloat(markStatus.mark)
-    markStatus.completion = parseFloat(markStatus.completion)
-    if(markStatus.mark === NaN || markStatus.completion === NaN)
+    let markStatus = markingOjbect.pop() //get marks
+    markStatus.marks = parseFloat(markStatus.marks) //convert marks to number
+    if(markStatus.marks === NaN)
         return null
-    return {marks : markStatus, testResult:markingOjbect}
+    return {marks : markStatus.marks, testResult:markingOjbect} //return objects
  }
 }
 

@@ -1,18 +1,20 @@
 /**Application Starting point*/
-import express from "express"
 import configuration from "config"
 import cors from "cors"
-import { nonAuthRouth } from "./routes/nonAuthController.js"
+import express from "express"
 import { authRouter } from "./routes/authRouter.js"
 import { lecturerRoute } from "./routes/lecturesRoute.js"
+import { nonAuthRouth } from "./routes/nonAuthController.js"
 import { studentRoute } from "./routes/studentRoute.js"
 //starting point
 let app = express()
 
 //middlewares
-app.use(express.json())
+app.use(express.json({limit: "40mb"}))
 app.use(cors())
 
+//static path
+app.use('/public',express.static('public'))
 //routers
 app.get("/", (req, res) => {
     res.send("ok i am workding")
@@ -35,5 +37,5 @@ app.listen(port, host, () => {
 })
 
 //export for testing
-export {app}
+export { app }
  
