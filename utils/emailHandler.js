@@ -71,7 +71,7 @@ const notifyLecturer  = async (lecturerEmail,assTitle, questionNumber) => {
     from: `"Auto Code Grader" <${server.email.email}>`, // sender address
     template: "notifyLecturer", // the name of the template file, i.e., email.handlebars
     to: lecturerEmail,
-    subject: `cant find result.txt during execution  ${assignement.title}`,
+    subject: `cant find result.txt during execution  ${assTitle}`,
     context: {
       title: assTitle,
       questionNumber : questionNumber,

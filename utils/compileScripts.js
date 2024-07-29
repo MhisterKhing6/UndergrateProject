@@ -3,12 +3,13 @@ import path from "path"
 import shell from "shelljs"
 import {execa} from 'execa'
 
-const checkSolutionFile = (workSpace, studenSolutionPath, presence) => {
+const checkSolutionFile = (workSpace, studenSolutionPath, presence, repo=null) => {
 /**
  * workSpace : the folder path to student directory
  */
 //get student paths
 let solutionFiles = studenSolutionPath.split("**")//get all student path in list
+workSpace = repo ? path.join(workSpace, repo) : workSpace
 let fullSolutionPath = solutionFiles.map((derivedPath) => path.join(workSpace,  derivedPath) )
 let compiledPath = [] //to prevent compiling header files in c which will generate errors
 //check if the path exits

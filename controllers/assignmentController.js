@@ -2,10 +2,10 @@
 controls assignment endpoints
 */
 
-import { Assignment, Compiler, AssignmentClasses, Task, Class, AssignmentRequirement } from "../models/relationship/relations.js"
+import { v4 } from "uuid"
+import { Assignment, AssignmentClasses, AssignmentRequirement, Class, Compiler, Course, Task } from "../models/relationship/relations.js"
 import { deleteTaskFile, readTaskFile, saveTaskFile, writeToFile } from "../utils/fileHandler.js"
 import { verifyMandatoryFields } from "../utils/verificationFunctions.js"
-import { v4 } from "uuid"
 
 class AssignmentSController {
     static createAssignment = async (req, res) => {
@@ -45,8 +45,10 @@ class AssignmentSController {
             return req.status(200).json({"reason": "fields missing", missingFields: "id"})
         //get assignment
         
-        let entry = await Assignment.findOne({where:{id}, attributes:['endDate', "startDate", "title", "objectives",  "plagiarism", "documentation", "codingStandards",
-        'gitMode',"readme", "repository", "CourseId", "LecturerId"]})
+        let entry = await Assignment.findOne({where:{id},include:[
+            {model:Course}, {model:Class}, {model:Compiler}
+        ], attributes:['endDate', "startDate", "title", "objectives",
+        'gitMode', "repository", "CourseId", "LecturerId"]})
         //delete assignemnt
         if(!entry)
             return res.status(400).json({reason: "assignment not found"})
@@ -71,8 +73,14 @@ class AssignmentSController {
         //get all assingments with lecturer id
         let assignements = await Assignment.findAll({where: {
             lecturerId
-        }, attributes:['endDate', "startDate", "title", "objectives",  "plagiarism", "documentation", "codingStandards",
-        'gitMode',"readme", "repository", "CourseId", "LecturerId"]})
+        },
+        include :[
+            {model:Compiler, attributes:['name']},
+            {model:Class, attributes:['className']},
+            {model:Course, attributes:['courseName']}
+        ]
+        ,attributes:['endDate', "startDate", "title", "objectives"]})
+
         ///return all assignment created by a lecturer
         return res.status(200).json(assignements)
     }
@@ -241,4 +249,4 @@ class AssignmentSController {
         return res.status(200).json(compiler)
     }
 }
-export {AssignmentSController}
+export { AssignmentSController }

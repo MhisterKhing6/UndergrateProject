@@ -45,17 +45,17 @@ const sanitizeResults = async (workspace) => {
         }
     markingOjbect.push(entryOjbect) //adding to mark object
  }
- console.log(markingOjbect)
 //check if the results are right
  if(markingOjbect.length === 0) // if no test return null
         return null
  else {
     let markStatus = markingOjbect.pop() //get marks
-    markStatus.marks = parseFloat(markStatus.marks) //convert marks to number
+    markStatus.marks = parseFloat(markStatus.marks) 
     if(markStatus.marks === NaN)
         return null
     return {marks : markStatus.marks, testResult:markingOjbect} //return objects
  }
 }
 
-export {sanitizeResults, checkIfResulstsFileExits}
+export { checkIfResulstsFileExits, sanitizeResults }
+

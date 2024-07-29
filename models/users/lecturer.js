@@ -41,7 +41,15 @@ lecturerId: {
  githubUserName : {
     type: DataTypes.STRING,
     allowNull: true,
- }
+ },
+ profileUrl : {
+   type: DataTypes.STRING,
+   allowNull: true,
+},
+profileDisk : {
+   type: DataTypes.STRING,
+   allowNull: true,
+},
 }, {sequelize: databaseConnection, indexes: [{unique: true, fields: ["email", "lecturerId"]}]})
 
 export { Lecturer }

@@ -156,21 +156,22 @@ export class UserController {
                 index: req.user.index,
                 githubUserName: req.user.githubUserName
             }) }
-        return res.status(200).json({profilePic: req.user.profileUrl,name: req.user.name, id: req.user.id, email: req.user.email, lecturerId: req.user.lecturerId})
+        return res.status(200).json({githubUserName:req.user.githubUserName, profilePic: req.user.profileUrl,name: req.user.name, id: req.user.id, email: req.user.email, lecturerId: req.user.lecturerId})
     }
 
     static update = async (req, res) => {
         //request contains request object
         //response contains response object
         let userDetails = req.body
+        console.log(userDetails)
         try {
-            if(!(userDetails.name || userDetails.profilePic || userDetails.githubUserName)) {
+            if(!(userDetails.name || userDetails.profilePic || userDetails.githubUserName)) 
                 return res.status(400).json({"reason": "no fields given"})
             if(userDetails.name)
                 req.user.name = userDetails.name
             if(userDetails.githubUserName)
                 req.user.githubUserName = userDetails.githubUserName
-            }
+            
             if(userDetails.profilePic && userDetails.fileName)
                 {
                     let encodedFile = userDetails.profilePic.split("base64,")[1]

@@ -91,3 +91,10 @@ export { studentRoute };
  * domain restricted to student
  */
 studentRoute.post("/submit/task/file", StudentController.submitAssignmentFile)
+
+/**
+ * submit studet assignment github
+ * method: post
+ * domain restricted to student
+ */
+studentRoute.post("/submit/task/github", StudentController.submitAssignmentGihub)

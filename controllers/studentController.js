@@ -146,19 +146,16 @@ export class StudentController {
                 }
             },
             include: [
-                {model:AssignmentResult, where: {StudentId:req.user.id}, attributes:['mark']},
-                {model:Compiler, attributes:['name']}
+                {model:AssignmentResult, required:false, where: {StudentId:req.user.id}, attributes:['mark']},
+                {model:Compiler, attributes:['name']},
+                {model:Course, attributes:['courseCode']}
             ],
             raw:true, 
             nest:true,
-            attributes: ['title', "stardDate", 'endDate'],
+            attributes: ['title', "startDate", 'endDate', 'id', 'gitMode'],
             order: [['endDate', 'DESC']]
 
         })
-        //find student Score
-        let studentScore = await AssignmentResult.findOne({where:{
-            StudentId:req.user.id, AssignmentId
-        }})
         //find all the assignment that are open
         return res.status(200).json(assCourse)
     }
@@ -222,7 +219,7 @@ export class StudentController {
         let assId = req.params.assId
         //get all the course of a class
         let ass = await Assignment.findOne( {where:{id:assId},raw:true, nest:true,
-            attributes: ["title", "objectives", "id", "gitMode"], 
+            attributes: ["title", "objectives", "id", "gitMode", "repository"], 
             include: {model:Compiler, attributes:['name', 'requirement', 'setupLink', 'extension']}, 
         })
         if(!ass)
@@ -253,6 +250,7 @@ export class StudentController {
          * res: http response object
          */
         let detials = req.body
+        try {
         //check for required fields
         if(!(detials.taskId)) {
             return res.status(400).json({"message": "fields missing"})
@@ -269,29 +267,99 @@ export class StudentController {
         //get compiler id from assignment
         let markSpacePath = await createStudentMarkSpace(asignment.Compiler.enviroment,task.AssignmentId, req.user.id)
         if(!markSpacePath)
-            return res.status(500).json({"message": "internal error contact backen adminstrator"})
+            return res.status(400).json({"message": "internal error contact backen adminstrator"})
         //get repoitory link
-        let link = repositoryLink(req.user.githubUserName, asignment.repository)
+        let link = await repositoryLink(markSpacePath, req.user.githubUserName, asignment.repository)
         //clone repository
         let cloningRespone = await cloneRepository(link, markSpacePath)
-        if(cloningRespone.code !== 0)
-            return res.status(400).json({"message": "repository not found"})
-
+        if(!cloningRespone) {
+                return res.status(500).json({message:"no internet to clone file"})
+        }
+        if(cloningRespone.failed)
+            return res.status(400).json({"message": cloneRepository.message})
+        //check if solution file exist
+        let solutionFileList = checkSolutionFile(markSpacePath, task.studentSolutionFileNames, true, asignment.repository)
+        if(!solutionFileList.allGiven)
+            return res.status(400).json({"message": solutionFileList.message})
         //compute marks here
-        let compileFunction = await compileScripts[Assignment.Compiler.name]
+        let compileFunction = await compileScripts[asignment.Compiler.name]
         if(!compileFunction)
              return res.status(501).json({"messages": "compile function not found"})
         //generate result of test and mark here
-        let compileOutput = await compileFunction(task.testFile, markSpacePath, task.studentSolutionFileNames)
-        if(compileOutput.error) //type: 1 errors represent error that occured b4 compilation
-            return res.status(400).json({"message": compileOutput.message, type:1})
-        //check if the student code  compiled successfully
-        if(compileOutput.response.stderr) // type: 2 errors represent errros occured during compilation
-            return res.status(400).json({"message": compileOutput.response.stderr, "type": "compile error", type:2})
-        //check to see if results is given
-        console.log("implement marking here")
-        return res.status(501).json({"message": "not implemented"})
+        let compileOutput = await compileFunction(task.testFile, markSpacePath, solutionFileList.solutionPath)
+        if(compileOutput.compileResponse.stderr) // type: 2 errors represent errros occured during compilation/ such as file not found
+             return res.status(400).json({"message": compileOutput.compileResponse.stderr.replaceAll(markSpacePath, ""), type:2})
+         //check to see if result file is given
+         let lecturer = await Lecturer.findByPk(asignment.LecturerId)
+         let resultFile = await checkIfResulstsFileExits(markSpacePath, lecturer.email, asignment.title,task.number)
+         if(!resultFile)
+            {    
+                asignment.stop = true
+                await asignment.save()
+                return res.status(400).json({"message": "error in generatig meta data for student grading, assignment is now close, contact lecturer for fix, this is not student fault"})
+            }
+        //start compilation here
+         //compile codes here
+         let genRequirementMark = 0;
+         let genRequirementResult = []
+         let requirements   = await AssignmentRequirement.findAll({where: {AssignmentId:task.AssignmentId}})
+         if(true){
+            if(true)
+                {
+                    //run coding standard function
+                    let standardFunction = codingStandard[asignment.Compiler.name]
+                    if(standardFunction) {
+                        let result = await standardFunction(solutionFileList.solutionPath, markSpacePath)
+                        if(result.pass) {
+                            genRequirementMark += 5
+                        }
+                        genRequirementResult.push({"name": "coding Standard", ...result})
+                    }
+                }
+         }
+         //start marking here
+         let studentMarkResult = await sanitizeResults(markSpacePath)
+         console.log(studentMarkResult)
+         if(!studentMarkResult)
+            return res.status(501).json({"message": "error generating student meta data wrong format"})
+         let lesserThanPrevMark = true
+         //add marks obtain from coding standards
+         studentMarkResult.marks += genRequirementMark
+         //save option here
+         let savedTaskResult = await TaskResult.findOne({where: {TaskId:task.id, StudentId:req.user.id}})
+         let totallAssResult = await AssignmentResult.findOne({where: {StudentId:req.user.id, AssignmentId:task.AssignmentId}})
+         //if not already saved results
+         if(!savedTaskResult) {
+            //form new results entry in the database
+            lesserThanPrevMark = false
+            let resultObject = {StudentId:req.user.id, TaskId:task.id, AssignmentId:task.AssignmentId, mark:studentMarkResult.marks, completion:studentMarkResult.marks.completion} //create result for task object
+            //check if the student has saved results
+            if(totallAssResult){
+                totallAssResult.mark += studentMarkResult.marks
+            }else {
+                totallAssResult = AssignmentResult.build({StudentId:req.user.id, mark:studentMarkResult.marks, AssignmentId:task.AssignmentId})
+            }
+            await Promise.all([totallAssResult.save(), TaskResult.create(resultObject)])
+         } else {
+            //check if prev mark is creater than current mark
+            if(savedTaskResult.mark < studentMarkResult.marks)
+               {
+                lesserThanPrevMark = false
+                totallAssResult.mark += (studentMarkResult.marks - savedTaskResult.mark)
+                savedTaskResult.mark = studentMarkResult.marks
+                await Promise.all([totallAssResult.save(), savedTaskResult.save()])
+               }
+         }
+         await deletFolder(markSpacePath)
+         return res.status(200).json({...studentMarkResult, genralRequirements: genRequirementResult, lesserThanPrevMark, assignmentScore:totallAssResult.mark})
+    } catch(err) {
+        console.log(err)
+        return res.status(501).json({message: "error occured"})
     }
+}
+
+
+
 
     static submitAssignmentFile = async (req, res) => {
         /**
@@ -304,6 +372,7 @@ export class StudentController {
         if(!(detials.codes, detials.taskId)) {
             return res.status(400).json({"message": "fields missing"})
         }
+        try {
         //get assignment id from task
         let task = await Task.findByPk(detials.taskId)
         if(!task)
@@ -370,9 +439,11 @@ export class StudentController {
             }
          //start marking here
          let studentMarkResult = await sanitizeResults(markSpacePath)
-         if(!studentMarkResult)
+         if(!studentMarkResult){
             return res.status(501).json({"message": "error generating student meta data wrong format"})
-         const lesserThanPrevMark = true
+
+         }
+         let lesserThanPrevMark = true
          //add marks obtain from coding standards
          studentMarkResult.marks += genRequirementMark
          //save option here
@@ -401,7 +472,10 @@ export class StudentController {
                }
          }
          await deletFolder(markSpacePath)
-         console.log(genRequirementMark)
          return res.status(200).json({...studentMarkResult, genralRequirements: genRequirementResult, lesserThanPrevMark, assignmentScore:totallAssResult.mark})
+        } catch(err) {
+            console.log(err)
+            return res.status(501).json({"message": "internal error"})
         }
+    }
 }
