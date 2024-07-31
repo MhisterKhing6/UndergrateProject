@@ -165,6 +165,9 @@ Message.belongsTo(Message, {constraints:false, as:"parentMessage"})
 Task.hasOne(TaskChecks,{constraints:false})
 TaskChecks.belongsTo(Task)
 
+Assignment.hasMany(TaskChecks)
+TaskChecks.belongsTo(Assignment)
+
 //relations check submission and task
 Student.hasMany(SubmissionChecks, {constraints:false})
 SubmissionChecks.belongsTo(Student, {constraints:false})
@@ -172,6 +175,9 @@ SubmissionChecks.belongsTo(Student, {constraints:false})
 //relationships between submissionChecks
 Task.hasMany(SubmissionChecks, {constraints:false})
 SubmissionChecks.belongsTo(Task)
+
+Assignment.hasMany(SubmissionChecks, {constraints:false})
+SubmissionChecks.belongsTo(Assignment, {constraints:false})
 
 //relationship between Assignment score plagiarism
 Assignment.hasMany(AssignmentScorePlagiarism, {constraints:false, onDelete: "CASCADE"})
@@ -181,6 +187,8 @@ AssignmentScorePlagiarism.belongsTo(Assignment, {constraints:false})
 Student.hasMany(AssignmentScorePlagiarism, {constraints:false})
 AssignmentScorePlagiarism.belongsTo(Student, {constraints:false})
 
+
+
 databaseConnection.sync({alter: true})
-export {TaskChecks, SubmissionChecks, Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, ClassCourses, Compiler, Course, File, Lecturer, Message, Notification, Program, ResetPasswordDb, Student, Task, TaskResult, TestResult, TestStatistics, VerifyEmail };
+export {AssignmentScorePlagiarism, TaskChecks, SubmissionChecks, Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, ClassCourses, Compiler, Course, File, Lecturer, Message, Notification, Program, ResetPasswordDb, Student, Task, TaskResult, TestResult, TestStatistics, VerifyEmail };
 

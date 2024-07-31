@@ -130,4 +130,9 @@ lecturerRoute.get("/submission/:id", AssignmentSController.ViewSubmissionAssignm
  * get Student report
  */
 lecturerRoute.post("/student-report", AssignmentSController.studentReport)
+
+/**
+ * get submission
+ */
+lecturerRoute.get("/submission", AssignmentSController.submissionsLecturer)
 export {lecturerRoute}

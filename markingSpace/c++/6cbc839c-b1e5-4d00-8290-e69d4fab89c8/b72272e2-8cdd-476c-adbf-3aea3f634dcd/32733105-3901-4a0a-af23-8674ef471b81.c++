@@ -5,9 +5,9 @@
 #include <fstream>
 #include <string>
 
-
 // Function declaration the student definition for the funtion will be compiled together with the tes
 int largestInteger(int firstNumber, int lastNumber);
+
 
 void writeTestResults() {
     // Test cases with unique marks for each test

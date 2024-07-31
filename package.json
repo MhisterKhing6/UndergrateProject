@@ -13,6 +13,8 @@
   "license": "ISC",
   "dependencies": {
     "@sequelize/mariadb": "^7.0.0-alpha.40",
+    "adm-zip": "^0.5.15",
+    "archiver": "^7.0.1",
     "bcrypt": "^5.1.1",
     "chai-http": "^4.4.0",
     "codequiry": "^1.0.4",

@@ -3,7 +3,7 @@
 // The Student solution will be compiled together with the function
 #include <iostream>
 #include <fstream>
-#include <string> 
+#include <string>
 
 // Function declaration the student definition for the funtion will be compiled together with the tes
 int largestInteger(int firstNumber, int lastNumber);
@@ -47,6 +47,7 @@ void writeTestResults() {
 
     // Add the total marks to the output
     output += "marks=" + std::to_string(totalMarks) + "\n";
+    
 
     // Write the output to result.txt
     std::ofstream file("result.txt");

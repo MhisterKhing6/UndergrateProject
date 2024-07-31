@@ -2,14 +2,15 @@
 controls assignment endpoints
 */
 
-import { Op } from "sequelize"
+import { Op, Sequelize } from "sequelize"
 import { v4 } from "uuid"
-import { Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, Compiler, Course, Program, Student, Task, TaskResult } from "../models/relationship/relations.js"
+import { Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, AssignmentScorePlagiarism, Class, Compiler, Course, Program, Student, SubmissionChecks, Task, TaskChecks, TaskResult } from "../models/relationship/relations.js"
 import { deleteTaskFile, readTaskFile, saveTaskFile, writeToFile } from "../utils/fileHandler.js"
 import { assignmentStats, exportExcell, exportPdf, taskStats } from "../utils/statisticsFunctions.js"
 import { verifyMandatoryFields } from "../utils/verificationFunctions.js"
 import { raw } from "config/raw.js"
-import { jobSchedule } from "../utils/plagiarismChecks.js"
+import { getStatus, jobSchedule } from "../utils/plagiarismChecks.js"
+import { I } from "pdfmake/build/pdfmake.js"
 
 class AssignmentSController {
     static createAssignment = async (req, res) => {
@@ -161,7 +162,8 @@ class AssignmentSController {
             return res.status(400).json({"reason": "fields missing", "missingFields": missingFields})
         //get task id
         let taskId = v4()
-        let file = await saveTaskFile({data:task.solutionScript, ext:task.ext}, task.AssignmentId, taskId, "Test")
+        let ass = await Assignment.findByPk(task.AssignmentId, {include: {model:Compiler}, raw:true, nest:true})
+        let file = await saveTaskFile({data:task.solutionScript, ext:task.ext}, task.AssignmentId, taskId, "Test", ass.Compiler.name)
         //save the file to the database
         if(!file)
             return res.status(501).json({"reason": "cant save file"})
@@ -318,6 +320,8 @@ class AssignmentSController {
 
     static ExportMarks = async (req, res, type) => {
         let id  = req.params.id
+        let assignment = await Assignment.findByPk(id, {raw:true, nest:true,include:{model:AssignmentRequirement}})
+        console.log(assignment)
         try {
         let exportType = req.query
         let scores = []
@@ -326,18 +330,33 @@ class AssignmentSController {
         else {
             scores  = await AssignmentResult.findAll({where:{AssignmentId:id}, nest:true, raw:true, include: {model:Student}})
         }
-        let mapResults = scores.map(val => {
-            if(type === "task")
-                return {name:val.Student.name, index:val.Student.index, marks:val.completion}
-            else
-                return {name:val.Student.name, index:val.Student.index, marks:val.mark}
-        })
+        let mapResults = []
+        for(const val of scores) {
+
+            if(type === "task") {
+                //check if plagiarism
+                let data = {name:val.Student.name, index:val.Student.index, marks:val.completion}
+                if(assignment.AssignmentRequirements.plagiarism && (new Date() > new Date(assignment.endDate))) {
+                    let result = await SubmissionChecks.findOne({where:{TaskId:val.id, StudentId:val.Student.id}, raw:true, nest:true})
+                    data.plagiarism = result ? result.score : "pending"
+                }   
+                mapResults.push(data)
+            }
+            else {
+                let data = {name:val.Student.name, index:val.Student.index, marks:val.mark}
+                if(assignment.AssignmentRequirements.plagiarism && (new Date() > new Date(assignment.endDate))) {
+                    let result = await AssignmentScorePlagiarism.findOne({where:{AssignmentId:assignment.id, StudentId:val.Student.id}, raw:true, nest:true})
+                    data.plagiarism = result ? result.score : "pending"
+                }
+                mapResults.push(data)
+            }
+        }   
         let filePath = null
         if(exportType.type === "pdf") {
-        filePath = await exportPdf(mapResults, id)
+        filePath = await exportPdf(mapResults, id, assignment.AssignmentRequirements.plagiarism)
         }//call pdf export function
         else {
-        filePath = await exportExcell(mapResults, id)
+        filePath = await exportExcell(mapResults, id, assignment.AssignmentRequirements.plagiarism)
         }
         //call excel export function
         return filePath ? res.status(200).download(filePath) : res.status(501).json({message:"internal error"})
@@ -352,7 +371,7 @@ class AssignmentSController {
         //get assignment
         try {
         let id = req.params.id
-        let assignment = await Assignment.findByPk(id, {raw:true, attributes:["title"]})
+        let assignment = await Assignment.findByPk(id, {raw:true})
         if(!assignment)
             return res.status(400).json({"message": "wrong assignment title"})
         let assignmentClass = await AssignmentClasses.findOne({where:{AssignmentId:id}, raw:true})
@@ -371,10 +390,67 @@ class AssignmentSController {
             offset = limit * (query.page - 1)
             page = query.page
         }
+        let data = []
         let {count, rows} = await AssignmentResult.findAndCountAll({where: {AssignmentId:id}, 
             include: {model: Student, where: filter},offset, nest:true, raw:true, limit
         })
-        return res.status(200).json({totalStudents, title:assignment.title, limit, items: rows, page, totalCount: count})
+        
+        //computing scores
+        //check if assignment has plagiarism
+        let assRequiremnt = await AssignmentRequirement.findOne({where: {AssignmentId:id}, raw:true, nest:true})
+        let pending = false
+        if(assRequiremnt.plagiarism && (new Date() > new Date(assignment.endDate))) {
+            //find all checks under assignment
+            let checks = await TaskChecks.findAll({where:{AssignmentId:id}, raw:true, nest:true})
+            //ensure all checks are ticked
+            pending = TaskChecks.length === 0 ? true : false
+            let subs = []
+            for (const check of checks) {
+                //check to see if the check id is found
+                let checks = await getStatus(check.checkId)
+                if(checks.status !== "Checks completed") {
+                    pending = true;
+                    break;
+                }
+                for (const submission of checks.submissions) {
+                    //find score and update the score according
+                    let studentSub = SubmissionChecks.findOne({where:{submissionId:submission.id}})
+                    studentSub.score = submission.total_result
+                    subs.push(studentSub.save())
+                    //find particular submission and update
+                }
+            }
+            await Promise.all(subs)
+        }
+        let output = []
+        //compute student plagiarism scores
+        if(assRequiremnt.plagiarism) {
+            for (const marks of rows) {
+                //find all student submission and rows
+                if(!pending) {
+                    const submission = await SubmissionChecks.findAll({
+                        where: {
+                          studentId: marks.Student.id,
+                          AssignmentId: id
+                        },
+                        attributes: [
+                          [Sequelize.fn('SUM', Sequelize.col('score')), 'totalMarks']
+                        ],
+                        raw: true // Ensures the result is returned as a plain object
+                      });
+                      console.log(submission)
+                    marks.plagiarism = submission.length===0 ? submission[0].marks : 0
+                    await AssignmentScorePlagiarism.create({score:marks.plagiarism, StudentId:marks.Student.id, AssignmentId:id})
+                } else {
+                    marks.plagiarism = "pending"
+                }
+                output.push(marks)
+            }
+        } else {
+            output = rows
+        }
+
+        return res.status(200).json({plagiarism:assRequiremnt.plagiarism, totalStudents, title:assignment.title, limit, items:output, page, totalCount: count})
     }catch(error) {
         console.log(error)
         return res.status(500).json({message:"internal"})
@@ -406,6 +482,19 @@ class AssignmentSController {
         let newStudent = {studentId:student.studentId, email:student.email, "class": student.Class.className, name:student.name, profileUrl:student.profileUrl, program:course.Program.programName}
         return res.status(200).json({student:newStudent, scores, course: {name:course.courseName, code:course.courseCode}})
         //course and student
+    }
+
+    static submissionsLecturer = async (req, res) => {
+        let assS = await Assignment.findAll({where: {LecturerId:req.user.id}, order:[["createdAt","DESC"]], limit:3, raw:true, nest:true})
+        let output = []
+        for(const ass of assS) {
+            //find number of class
+            let assClass = await Class.findAll({where: {id:ass.ClassId}, raw:true, nest:true})
+            let sumbs = await AssignmentResult.findAll({where: {AssignmentId:ass.id}, raw:true, nest:true})
+            output.push({totalClass:assClass.length,submission:sumbs.length, title:ass.title })
+        }
+        console.log(output)
+        return res.status(200).json(output)
     }
 }
 export { AssignmentSController }

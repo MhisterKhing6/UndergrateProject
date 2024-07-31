@@ -87,7 +87,8 @@ const compileScripts = {
                         return {"error": true, message: "java compiler not installed"}
                     }
                 let response = await compileCode(testScript, workSpace, async (base, currentWd) =>{ 
-                        return await execa('java',[base, ...solutionFiles], {cwd:currentWd})
+                        await execa('javac',[base, ...solutionFiles], {cwd:currentWd})
+                        return await execa('java',['Test'], {cwd:currentWd})
                 })
                 return {"error": false, compileResponse: response}
                 

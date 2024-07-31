@@ -36,7 +36,6 @@ void writeTestResults() {
         // Add marks if the test passed
         if (status == "pass") {
             totalMarks += testCase.marks;
-            
         }
 
         // Save the test result to the output string
@@ -48,6 +47,7 @@ void writeTestResults() {
 
     // Add the total marks to the output
     output += "marks=" + std::to_string(totalMarks) + "\n";
+    
 
     // Write the output to result.txt
     std::ofstream file("result.txt");

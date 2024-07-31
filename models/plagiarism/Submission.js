@@ -12,7 +12,7 @@ SubmissionChecks.init({
        type: DataTypes.STRING, allowNull: false
     },
     submissionId: {
-        type: DataTypes.STRING, allowNull:false
+        type: DataTypes.DOUBLE, allowNull:false
     },
     score: {
         type: DataTypes.INTEGER, allowNull:true

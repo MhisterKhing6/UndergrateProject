@@ -3,6 +3,9 @@ import { rm, readFile, writeFile, existsSync, mkdir, unlink } from "fs"
 import { v4 } from "uuid"
 import config from "config"
 import path from "path"
+import fs from "fs";
+import archiver from 'archiver';
+
 const readFileAsync = promisify(readFile)
 const writeFileAsyc = promisify(writeFile)
 const mkdirAsync =    promisify(mkdir)
@@ -148,7 +151,7 @@ const saveFile = async ({data, ext}, fileId, parentFolder) => {
 
 }
 
-const saveTaskFile = async ({data, ext}, assId, taskId, type ) => {
+const saveTaskFile = async ({data, ext}, assId, taskId, type, prog ) => {
     //create parent folder 
     let base = path.resolve("./static")
     let parentFolder = base + `/assignment/${assId}/${taskId}/${type}`
@@ -157,7 +160,7 @@ const saveTaskFile = async ({data, ext}, assId, taskId, type ) => {
         return null
     //decode the data
     //generate file id 
-    let fileId = v4()
+    let fileId = prog ==="java" ? "Test" : v4()
     //file saved status
     let fileSavedStatus = await saveFile({data, ext},fileId, parentFolder)
     //file path
@@ -177,4 +180,47 @@ const deleteTaskFile = async (filePath) => {
     return await unlinkAsync(filePath)
 } 
 
-export {writeForumFile , generateFileUrl, deletFolder, writeBinaryFile, createStudentMarkSpace, deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }
+function zipFiles(filePaths, outputPath) {
+    return new Promise((resolve, reject) => {
+        const output = fs.createWriteStream(outputPath);
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Compression level
+        });
+
+        output.on('close', () => {
+            console.log(`Archive created: ${archive.pointer()} total bytes`);
+            resolve();
+        });
+
+        output.on('error', (err) => {
+            reject(err);
+        });
+
+        // Pipe the archive data to the file
+        archive.pipe(output);
+
+        // Add multiple files to the archive
+        filePaths.forEach(filePath => {
+            archive.file(filePath, { name: filePath.split('/').pop() });
+        });
+
+        // Finalize the archive
+        archive.finalize();
+    });
+}
+
+
+const compress = async (filePaths, assId,taskId, studentId) => {
+    console.log(filePaths)
+    let fileName = `${studentId}.zip`
+    let parentPath = path.join(path.resolve("."), "static", "submissions", assId, taskId)
+    //create folder 
+    let fullPath = path.join(parentPath, fileName)
+
+    let status = await createFolder(parentPath)
+    await zipFiles(filePaths, fullPath)
+    //folder is created 
+    return fullPath
+}
+
+export {compress, writeForumFile , generateFileUrl, deletFolder, writeBinaryFile, createStudentMarkSpace, deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }

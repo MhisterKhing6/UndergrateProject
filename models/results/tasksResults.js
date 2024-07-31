@@ -19,6 +19,9 @@ TaskResult.init({
         type: DataTypes.UUID,
         primaryKey: true,
         defaultValue: DataTypes.UUIDV4
+     },
+     filePath: {// uniquly identify the assigemtn
+        type: DataTypes.STRING, allowNull:true
      }
      //compilerId: relationship attribute use to identify the type of compiler or the programming language
 }, {sequelize: databaseConnection})

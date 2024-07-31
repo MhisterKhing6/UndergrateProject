@@ -82,7 +82,7 @@ const taskStats = async (assignmentId) => {
     return output
 }
 
-const exportExcell = async (data, id) => {
+const exportExcell = async (data, id, plagiarism) => {
     try {
     let folderPath = path.join(path.resolve("."),"assignmentFiles")
     let fullPath = path.join(folderPath, `${id}.xlsx`)
@@ -90,6 +90,8 @@ const exportExcell = async (data, id) => {
 
     // Define the headers and data
     const headers = ['Name', 'Index', 'Marks'];
+    if(plagiarism)
+        headers.push("Plagiarism")
     /*const data = [
         { name: 'John Doe', index: '001', marks: 85 },
         { name: 'Jane Smith', index: '002', marks: 92 },
@@ -100,7 +102,12 @@ const exportExcell = async (data, id) => {
     // Create an array of arrays (rows) for Excel
     const worksheetData = [
         headers, // Header row
-        ...data.map(row => [row.name, row.index, row.marks]) // Data rows
+        ...data.map(row => {
+            let datum = [row.name, row.index, row.marks] 
+            if(plagiarism)
+                datum.push(row.plagiarism)
+            return datum
+        }) // Data rows
     ];
     
     // Create a new workbook and add the worksheet
@@ -109,9 +116,10 @@ const exportExcell = async (data, id) => {
     
     // Adjust column widths (optional, to ensure proper alignment)
     worksheet['!cols'] = [
-        { wch: 50 },  // Width of the "Name" column
+        { wch: plagiarism ? 30 : 50 },  // Width of the "Name" column
         { wch: 20 },  // Width of the "Index" column
-        { wch: 20 }   // Width of the "Marks" column
+        { wch: 20 }, 
+        plagiarism ? {wch: 20} : ""  // Width of the "Marks" column
     ];
     
     // Append the worksheet to the workbook
@@ -124,7 +132,7 @@ const exportExcell = async (data, id) => {
     console.log(error)
 }
 
-const exportPdf = async (data, id) => {
+const exportPdf = async (data, id, plagiarism) => {
     
     try {
 
@@ -150,6 +158,16 @@ const exportPdf = async (data, id) => {
     
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
     
+    let wid = ['*', 'auto', 'auto']
+    let bod = [{ text: 'Name', style: 'tableHeader' }, 
+        { text: 'Index', style: 'tableHeader' }, 
+        { text: 'Marks', style: 'tableHeader' },
+       ]
+    if(plagiarism) {
+        wid.push("auto")
+        bod.push({text:"Plagiarism", style:'tableHeader'})
+    }
+    
     // Define the document definition
     const docDefinition = {
         content: [
@@ -157,13 +175,14 @@ const exportPdf = async (data, id) => {
             {
                 table: {
                     headerRows: 1,
-                    widths: ['*', 'auto', 'auto'], // Adjust column widths
+                    widths: wid, // Adjust column widths
                     body: [
-                        [{ text: 'Name', style: 'tableHeader' }, 
-                         { text: 'Index', style: 'tableHeader' }, 
-                         { text: 'Marks', style: 'tableHeader' }], // Table header
+                        bod, // Table header
                         ...data.map(val => {
-                            return [val.name, val.index, val.marks]
+                            let data = [val.name, val.index, val.marks]
+                            if(plagiarism)
+                                data.push(val.plagiarism)
+                            return data
                         })
                     ]
                 }

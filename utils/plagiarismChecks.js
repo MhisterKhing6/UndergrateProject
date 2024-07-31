@@ -22,7 +22,7 @@ const uploadSubmission = (checkId, filePath, task) => {
     return new Promise((resolve, reject) => {
         Codequiry.uploadFile(checkId, filePath, async function(data, err) {
            if(!err) {
-            let submissionDetails = {submissionId: data[0].id,checkId, TaskId:task.id, StudentId:task.StudentId}
+            let submissionDetails = {AssignmentId:task.AssignmentId, submissionId: data[0].id,checkId, TaskId:task.id, StudentId:task.StudentId}
             await SubmissionChecks.create(submissionDetails)
             resolve("done")
            }else {
@@ -108,6 +108,7 @@ const startChecks = async (assId, code) => {
 const jobSchedule = async (assId, programmingCode, date) => {
     schedule.scheduleJob(date, async () => {
         try {
+        console.log(date)
         await startCheck(assId, programmingCode)
         } catch(error) {
             console.log(error)
@@ -123,4 +124,4 @@ const dummyTest = () => {
 }
 
 
-export {jobSchedule}
+export {jobSchedule, getStatus}

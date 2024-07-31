@@ -3,7 +3,7 @@ import { Op } from '@sequelize/core';
 import path from "path";
 import { Assignment, AssignmentRequirement, AssignmentResult, Class, Compiler, Course, Lecturer, Task, TaskResult, TestResult, TestStatistics } from "../models/relationship/relations.js";
 import { checkSolutionFile, compileScripts } from "../utils/compileScripts.js";
-import { createStudentMarkSpace, deletFolder, writeToFile } from "../utils/fileHandler.js";
+import { compress, createStudentMarkSpace, deletFolder, writeToFile } from "../utils/fileHandler.js";
 import { checkIfResulstsFileExits, sanitizeResults } from "../utils/markingHelperFunction.js";
 import { codingStandard } from "../utils/requirementScripts.js";
 import { cloneRepository, repositoryLink } from "../utils/submissionFunctions.js";
@@ -49,14 +49,14 @@ export class StudentController {
             raw:true, 
             nest:true,
             include:{ model:Assignment, 
-                where: {
+                /*where: {
                 startDate: {
                     [Op.lte]: Date.now()
                 },
                 endDate: {
                     [Op.gte]:Date.now()
                 },
-                },
+                },*/
                 include: [
                     {model:AssignmentResult, required:false, where: {StudentId:req.user.id}, attributes:['mark']},
                     {model:Course, attributes:['courseCode']}],
@@ -395,7 +395,8 @@ export class StudentController {
             }else {
                 totallAssResult = AssignmentResult.build({StudentId:req.user.id, mark:studentMarkResult.marks, AssignmentId:task.AssignmentId})
             }
-            await Promise.all([totallAssResult.save(), TaskResult.create(resultObject)])
+            savedTaskResult =await TaskResult.create(resultObject)
+            await Promise.all([totallAssResult.save()])
          } else {
             //check if prev mark is creater than current mark
             if(savedTaskResult.mark < studentMarkResult.marks)
@@ -405,6 +406,14 @@ export class StudentController {
                 savedTaskResult.mark = studentMarkResult.marks
                 await Promise.all([totallAssResult.save(), savedTaskResult.save()])
                }
+         }
+         if(!lesserThanPrevMark) {
+            console.log(solutionFileList)
+            //write to zip file
+           let fullPath =  await compress(solutionFileList.solutionPath, task.AssignmentId, task.id, req.user.id)
+           savedTaskResult.filePath = fullPath
+           await savedTaskResult.save()
+           
          }
          await deletFolder(markSpacePath)
          return res.status(200).json({...studentMarkResult, genralRequirements: genRequirementResult, lesserThanPrevMark, assignmentScore:totallAssResult.mark})
@@ -450,7 +459,7 @@ export class StudentController {
         for(const requireFile of solutionFilNames){
             if(!studentGivenFileNames.includes(requireFile))
                 return res.status(400).json({"message": `${requireFile} not found`})
-        }
+        } 
         //creat student code in path
         for(const studentCode of detials.codes) {
             let response = await writeToFile(path.join(markSpacePath, studentCode.fileName), studentCode.code)
@@ -565,7 +574,8 @@ export class StudentController {
             }else {
                 totallAssResult = AssignmentResult.build({StudentId:req.user.id, mark:studentMarkResult.marks, AssignmentId:task.AssignmentId})
             }
-            await Promise.all([totallAssResult.save(), TaskResult.create(resultObject)])
+            savedTaskResult = await TaskResult.create(resultObject)
+            await Promise.all([totallAssResult.save()])
          } else {
             //check if prev mark is creater than current mark
             if(savedTaskResult.mark < studentMarkResult.marks)
@@ -576,7 +586,15 @@ export class StudentController {
                 await Promise.all([totallAssResult.save(), savedTaskResult.save()])
                }
          }
-         await deletFolder(markSpacePath)
+
+         if(!lesserThanPrevMark) {
+            //write to zip file
+           let fullPath =  await compress(solutionFileList.solutionPath, task.AssignmentId, task.id, req.user.id)
+           savedTaskResult.filePath = fullPath
+           await savedTaskResult.save()
+           
+         }
+         //await deletFolder(markSpacePath)
          return res.status(200).json({...studentMarkResult, genralRequirements: genRequirementResult, lesserThanPrevMark, assignmentScore:totallAssResult.mark})
         } catch(err) {
             console.log(err)
