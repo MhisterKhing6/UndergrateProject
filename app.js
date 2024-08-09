@@ -17,7 +17,7 @@ app.use(cors())
 app.use('/public',express.static('public'))
 //routers
 app.get("/", (req, res) => {
-    res.send("ok i am workding")
+    res.send("ok i am working")
 })
 // registration and non authentication interfaces
 app.use('/api', nonAuthRouth)

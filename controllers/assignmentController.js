@@ -3,8 +3,9 @@ controls assignment endpoints
 */
 
 import { v4 } from "uuid"
-import { Assignment, AssignmentClasses, AssignmentRequirement, Class, Compiler, Course, Task } from "../models/relationship/relations.js"
+import { Assignment, AssignmentClasses, AssignmentRequirement, Class, Compiler, Course, Program, Task } from "../models/relationship/relations.js"
 import { deleteTaskFile, readTaskFile, saveTaskFile, writeToFile } from "../utils/fileHandler.js"
+import { assignmentStats, taskStats } from "../utils/statisticsFunctions.js"
 import { verifyMandatoryFields } from "../utils/verificationFunctions.js"
 
 class AssignmentSController {
@@ -46,7 +47,7 @@ class AssignmentSController {
         //get assignment
         
         let entry = await Assignment.findOne({where:{id},include:[
-            {model:Course}, {model:Class}, {model:Compiler}
+            {model:Course}, {model:Class, include:[{model:Program}]}, {model:Compiler}
         ], attributes:['endDate', "startDate", "title", "objectives",
         'gitMode', "repository", "CourseId", "LecturerId"]})
         //delete assignemnt
@@ -74,12 +75,13 @@ class AssignmentSController {
         let assignements = await Assignment.findAll({where: {
             lecturerId
         },
+        order:[["endDate", "DESC"]],
         include :[
             {model:Compiler, attributes:['name']},
             {model:Class, attributes:['className']},
             {model:Course, attributes:['courseName']}
         ]
-        ,attributes:['endDate', "startDate", "title", "objectives"]})
+        ,attributes:['endDate', "startDate", "title", "objectives","id"]})
 
         ///return all assignment created by a lecturer
         return res.status(200).json(assignements)
@@ -90,19 +92,22 @@ class AssignmentSController {
         //updates alreadedy created assignments
         let details = req.body
         //check for right enteries
-        let correctColumns = ['endDate', "startDate", "title", "objectives",  "plagiarism", "documentation", "codingStandards",
+        let correctColumns = ['programId','ClassId', 'endDate', "startDate", "title", "objectives",  "plagiarism", "documentation", "codingStandards",
                               'gitMode',"readme", "repository", "CourseId", "LecturerId", "CompilerId"]
         if(!details.id)
             return res.status(400).json({reason: "fields missing", missingFields: "id"})
         //get assignment by id
         let assignment = await Assignment.findByPk(details.id)
+        let assRequiremnt = await AssignmentRequirement.findOne({where:{AssignmentId:details.id}})
         if(!assignment)
             return res.status(400).json({reason: "assignment not found"})
         //update right enteries
         for (const column of Object.keys(details)) {
             //exclude id
             if(!(column === "id" || column ==="open" || column === "createdAt" || column === "updatedAt")) {
-                if(correctColumns.includes(column)) {
+                if(["codingStandards", "plagiarism", "documentation"].includes(column))
+                    assRequiremnt[column] = details[column]
+                else if(correctColumns.includes(column)) {
                    //update information for entry
                    assignment[column] = details[column] 
                 } else {
@@ -112,6 +117,8 @@ class AssignmentSController {
         }
         //save information in the database
         await assignment.save()
+        console.log(assignment)
+        await assRequiremnt.save()
         return res.status(200).json({"reason": "success", assignmentId: details.id})
     }
 
@@ -247,6 +254,46 @@ class AssignmentSController {
         if(!compiler) 
             return res.status(400).json({"reason": "compiler not found"})
         return res.status(200).json(compiler)
+    }
+    static AssignmentDetailsWithInfo = async (req, res) => {
+        try {
+            let assId = req.params.id
+            let assWithDetails = await Assignment.findOne({where:{id:assId}
+            ,include:[
+                {model:Compiler},
+                {model:Course},
+                {model:Class},
+                {model:AssignmentRequirement},
+
+            ],
+        raw:true,
+        nest:true
+        })
+        let tasks = await Task.findAll({where:{AssignmentId:assId}, raw:true, nest:true})
+        assWithDetails.tasks = tasks
+        return res.status(200).json(assWithDetails)
+        } catch(err) {
+            console.log(err)
+            res.status(500).json({"message": "internal error"})
+        }        
+    }
+
+    //get assignment statistics
+    static AssignmentStatistics = async (req, res) => {
+        let assignmentId = req.params.id
+        try {
+        //check if there is assignment with id
+        let assignment = await Assignment.findByPk(assignmentId)
+        if(!assignment)
+            return res.status(400).json({"message": "no assignment entry found"})
+        let assStats = await assignmentStats(assignmentId)
+        let tasks = await taskStats(assignmentId)
+        console.log({assStats, "taskStats": tasks})
+        return res.status(200).json({assStats: {...assStats, title:assignment.title}, "taskStats": tasks})
+        } catch(error) {
+            console.log(error)
+        } 
+        return res.status(500).json({"message": "wrong assignment id"})
     }
 }
 export { AssignmentSController }

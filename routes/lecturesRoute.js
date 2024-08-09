@@ -97,6 +97,15 @@ lecturerRoute.delete("/assignment/task/:id", AssignmentSController.deleteTask)
  */
 lecturerRoute.post("/assignment/add/class", AssignmentSController.addClass)
 
+/**
+ * getAssignment details
+ * get assignment with id
+ */
+lecturerRoute.get("/assignment/view/:id", AssignmentSController.AssignmentDetailsWithInfo)
 
-
+/**
+ * getAssignment status
+ * get assignment with id
+ */
+lecturerRoute.get("/assignment/stats/:id", AssignmentSController.AssignmentStatistics)
 export {lecturerRoute}

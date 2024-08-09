@@ -1,19 +1,21 @@
 /*Foreign relationships between object */
-import { Lecturer } from "../users/lecturer.js";
-import { Assignment } from "../assignment/assignment.js";
-import {Compiler} from "../programming/compiler.js"
-import { Task } from "../assignment/task.js";
+import { DataTypes } from "sequelize";
 import { databaseConnection } from "../../utils/databaseConnector.js";
-import {Student} from "../users/student.js"
+import { Assignment } from "../assignment/assignment.js";
+import { AssignmentRequirement } from "../assignment/assignmentRequirements.js";
+import { Task } from "../assignment/task.js";
+import { Compiler } from "../programming/compiler.js";
 import { Class } from "../programs/class.js";
+import { Course } from "../programs/course.js";
 import { Program } from "../programs/program.js";
+import { AssignmentResult } from "../results/assignmentResults.js";
+import { TaskResult } from "../results/tasksResults.js";
+import { TestResult } from "../results/testResults.js";
+import { TestStatistics } from "../statistics/testStatistics.js";
+import { Lecturer } from "../users/lecturer.js";
+import { Student } from "../users/student.js";
 import { VerifyEmail } from "../verifications/emailVerication.js";
 import { ResetPasswordDb } from "../verifications/passwordsReset.js";
-import { DataTypes } from "sequelize";
-import { Course } from "../programs/course.js";
-import { AssignmentRequirement } from "../assignment/assignmentRequirements.js";
-import { TaskResult } from "../results/tasksResults.js";
-import { AssignmentResult } from "../results/assignmentResults.js";
 
 const AssignmentClasses = databaseConnection.define('AssignmentClasses', {
     ClassId: {
@@ -125,5 +127,17 @@ Assignment.hasMany(AssignmentResult,{constraints:false} )
 AssignmentResult.belongsTo(Assignment, {constraints:false})
 
 
+//relations between test result and task
+Task.hasMany(TestStatistics)
+TestStatistics.belongsTo(Task)
+
+//relationship between task and test results
+Task.hasMany(TestResult, {constraints:false})
+TestResult.belongsTo(Task, {constraints:false})
+//relationship between Student and Task Results
+Student.hasMany(TestResult, {constraints:false})
+TestResult.belongsTo(Student, {constraints:false})
+
 databaseConnection.sync({alter: true})
-export {TaskResult, AssignmentResult, ClassCourses, Course, AssignmentClasses,ResetPasswordDb,VerifyEmail,Task, Lecturer, Assignment, Compiler, Student, Program, Class, AssignmentRequirement }
+export { Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, ClassCourses, Compiler, Course, Lecturer, Program, ResetPasswordDb, Student, Task, TaskResult, TestResult, TestStatistics, VerifyEmail };
+

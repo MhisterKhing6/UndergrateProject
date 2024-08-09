@@ -1,7 +1,7 @@
 /**Controller for student endpoints */
 import { Op } from '@sequelize/core';
 import path from "path";
-import { Assignment, AssignmentRequirement, AssignmentResult, Class, Compiler, Course, Lecturer, Task, TaskResult } from "../models/relationship/relations.js";
+import { Assignment, AssignmentRequirement, AssignmentResult, Class, Compiler, Course, Lecturer, Task, TaskResult, TestResult, TestStatistics } from "../models/relationship/relations.js";
 import { checkSolutionFile, compileScripts } from "../utils/compileScripts.js";
 import { createStudentMarkSpace, deletFolder, writeToFile } from "../utils/fileHandler.js";
 import { checkIfResulstsFileExits, sanitizeResults } from "../utils/markingHelperFunction.js";
@@ -322,6 +322,57 @@ export class StudentController {
          console.log(studentMarkResult)
          if(!studentMarkResult)
             return res.status(501).json({"message": "error generating student meta data wrong format"})
+         //save results statistics
+         for(const result of studentMarkResult.testResult) {
+            //check to see if a stats entry is already saved
+            let testEntry = await TestStatistics.findOne({where: {TaskId:task.id, testNumber:result.testnumber}})
+            let studenResults = await TestResult.findOne({where: {StudentId:req.user.id, TaskId:task.id, testNumber:result.testnumber}})
+            //check for the previous entry
+            if(testEntry) {
+                //check for current results
+                if(result.status) {
+                    //check for previous results
+                    if(!studenResults) {
+                        testEntry.passNumber += 1
+                        studenResults = TestResult.build({StudentId:req.user.id , TaskId:task.id,testNumber:result.testnumber, ...result})
+                    }
+                    else {
+                        if(!studenResults.status) {
+                            testEntry.failedNumber -= 1
+                            testEntry.passNumber += 1
+                            studenResults.status = true
+                            studenResults.feedback = result.feedback
+                        }
+                    }
+                } else {
+                    //consider only situation where it is wrong entry
+                    if(!studenResults) {
+                        testEntry.failedNumber += 1
+                        studenResults = TestResult.build({StudentId:req.user.id, TaskId:task.id, testNumber:result.testnumber, ...result})
+                    }
+                }
+                await studenResults.save()
+                await testEntry.save()
+            } else {
+                //make new stat entry and saved //situations for first submission
+                let statEntry = {"TaskId": task.id, feedback:result.feedback, testNumber:result.testnumber, failedNumber:0, passNumber:0}
+                if(result.status){
+                    statEntry.passNumber = 1
+                }
+                 else {
+                    console.log("failed")
+                    statEntry.failedNumber = 1
+                 }
+                testEntry = TestStatistics.build(statEntry)
+
+                studenResults = TestResult.build({StudentId:req.user.id, TaskId:task.id, testNumber:result.testnumber, ...result})
+                console.log(statEntry)
+                await testEntry.save()
+                await studenResults.save()
+            }
+            
+         }
+
          let lesserThanPrevMark = true
          //add marks obtain from coding standards
          studentMarkResult.marks += genRequirementMark
@@ -442,6 +493,51 @@ export class StudentController {
          if(!studentMarkResult){
             return res.status(501).json({"message": "error generating student meta data wrong format"})
 
+         }
+         for(const result of studentMarkResult.testResult) {
+            //check to see if a stats entry is already saved
+            let testEntry = await TestStatistics.findOne({where: {TaskId:task.id, testNumber:result.testnumber}})
+            let studenResults = await TestResult.findOne({where: {StudentId:req.user.id, TaskId:task.id, testNumber:result.testnumber}})
+            //check for the previous entry
+            if(testEntry) {
+                //check for current results
+                if(result.status) {
+                    //check for previous results
+                    if(!studenResults) {
+                        testEntry.passNumber += 1
+                        studenResults = TestResult.build({StudentId:req.user.id , TaskId:task.id,testNumber:result.testnumber, ...result})
+                    }
+                    else {
+                        if(!studenResults.status) {
+                            testEntry.failedNumber -= 1
+                            testEntry.passNumber += 1
+                            studenResults.status = true
+                            studenResults.feedback = result.feedback
+                        }
+                    }
+                } else {
+                    //consider only situation where it is wrong entry
+                    if(!studenResults) {
+                        testEntry.failed += 1
+                        studenResults = TestResult.build({StudentId:req.user.id, TaskId:task.id, testNumber:result.testNumber, ...testNumber})
+                    }
+                }
+                await studenResults.save()
+                await testEntry.save()
+            } else {
+                //make new stat entry and saved //situations for first submission
+                let statEntry = {"TaskId": task.id, feedback:result.feedback, testNumber:result.testnumber}
+                if(result.status)
+                    statEntry.passNumber += 1
+                else 
+                    statEntry.failedNumber += 1
+                testEntry = TestStatistics.build(statEntry)
+
+                studenResults = TestResult.build({StudentId:req.user.id, TaskId:task.id, testNumber:result.testnumber, ...result})
+                await testEntry.save()
+                await studenResults.save()
+            }
+            
          }
          let lesserThanPrevMark = true
          //add marks obtain from coding standards
