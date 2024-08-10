@@ -2,13 +2,14 @@
 import sha1 from 'sha1'
 import { Class } from "../models/programs/class.js"
 import { Program } from "../models/programs/program.js"
+import { Message, Notification } from '../models/relationship/relations.js'
 import { Lecturer } from "../models/users/lecturer.js"
 import { Student } from "../models/users/student.js"
 import { VerifyEmail } from "../models/verifications/emailVerication.js"
 import { generateSecretNumber } from "../utils/DatesManipulations.js"
 import { getToken, verifyToken } from "../utils/authenticationFunctions.js"
 import { sendVerification } from "../utils/emailHandler.js"
-import { generateFileUrl, writeBinaryFile } from "../utils/fileHandler.js"
+import { generateFileUrl, writeBinaryFile, writeForumFile } from "../utils/fileHandler.js"
 import { validateEmail, validatePassword, verifyMandatoryFields } from "../utils/verificationFunctions.js"
 
 export class UserController {
@@ -191,4 +192,60 @@ export class UserController {
             return res.status(501).json({"reason": "error"})
         }
     }
+
+    static postMessage = async (req, res) => {
+        try {
+        let messageBody = req.body
+        if(!(messageBody.AssignmentId))
+            return res.status(400).json({"message": "not all fields given"})
+        //check the type of message and handle according
+        let message = null
+        if(type !== "text") {
+            let paths  = await writeForumFile(messageBody.data, messageBody.AssignmentId, messageBody.type, req.user.id, messageBody.fileName)
+            if(!paths)
+                return res.status(500).json({message:"cant write file to disk"})
+            //generate file url
+            let fileUrl = generateFileUrl(paths.relativePath)
+            message = Message.build({userId:req.user.id, userName:req.user.name, userProfile:req.user.profileUrl, ...messageBody})
+            //save file entry
+            await File.create({url:fileUrl, diskPath:paths.fullPath, MessageId:message.id, type:messageBody.type })
+            //handle operations
+        } else {
+            message = Message.build({userId:req.user.id, userName:req.user.name, userProfile:req.user.profileUrl, ...messageBody})
+        }
+        await message.save()
+        //check if the message is reply message add notification
+        if(messageBody.parentMessageId) {
+            //notify the sender of the message
+            let message = await Message.findByPk(messageBody.parentMessageId)
+            if(!message)
+                return res.status(400).json({message: "cant find parent message"})
+            //form notification message
+            await Notification.create({userId:message.userId, MessageId:message.id, AssignmentId:message.AssignmentId, replyName:req.user.name})
+        }
+        return res.status(200).json({"messageId": message.id})
+        }catch(error) {
+            console.log(error)
+            return res.status(501).json({"message": "internale error"})
+        }
+    }
+
+    //get message
+    static getMessage = async (req, res) => {
+        try {
+        //get message
+        let pagination = req.query
+        let assId = req.params.id
+        if(!pagination.page || !pagination.limit) {
+            pagination.page = 0
+            pagination.limit = 50
+        }
+        let offset = pagination.page * pagination.limit
+        const {count, rows} = await Message.findAndCountAll({nest:true, raw:true, where: {AssignmentId:assId},limit:pagination.limit, offset, include:{model:Message}, order:[["createdAt", "DESC"]]})
+        return res.status(200).json({items:rows, page:pagination.page, limit:pagination.limit, totalCount:count})
+    }catch(error) {
+        console.log(error)
+        return res.status(500).json({"message": "internal error"})
+    }
+  }
 }

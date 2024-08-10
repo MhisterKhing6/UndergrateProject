@@ -50,6 +50,34 @@ let writeBinaryFile = async (base64, userId, origName)=> {
         return null
     }
 }
+
+let writeForumFile = async (base64, assignmentId, type,userId, origName)=> {
+    try {
+    let file = await decodeDataBase64(base64)
+    //create relative filename for url
+    let relativePath = path.join("public","forum", assignmentId, type)
+    //create file name
+    let fileName = `${userId}${path.extname(origName)}`
+    //create full path folder
+    let fullPath = path.join(path.resolve("."),relativePath)
+    //create folder if not exist
+    if(!existsSync(fullPath))
+        await createFolder(fullPath)
+    //generate full file name with fileName
+    fullPath = path.join(fullPath, fileName)
+    //write the file to file
+    let obs = await writeToFile(fullPath, file)
+    //add file filename to relative path to generate url
+    relativePath = path.join(relativePath, fileName)
+    if(!obs)
+        return null
+    return {relativePath,fullPath}
+    }
+    catch(err) {
+        console.log(err)
+        return null
+    }
+}
 let writeToFile= async (path, binary) => {
     try {
         if(existsSync(path))
@@ -148,4 +176,4 @@ const deleteTaskFile = async (filePath) => {
     return await unlinkAsync(filePath)
 } 
 
-export {generateFileUrl, deletFolder, writeBinaryFile, createStudentMarkSpace, deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }
+export {writeForumFile , generateFileUrl, deletFolder, writeBinaryFile, createStudentMarkSpace, deleteTaskFile,readTaskFile, saveTaskFile,encodeBase64, readFromFile, decodeDataBase64, saveFile, createFolder, writeToFile }

@@ -57,4 +57,17 @@ authRouter.get("/assignment/task/:id", AssignmentSController.getTaskDetails)
  */
 authRouter.get("/assignment/:id", AssignmentSController.getAssignmentDetails)
 
+/**post message
+ * method post
+ */
+authRouter.post("/forum-message", UserController.postMessage)
+
+/**
+ * get forum messages for specific assignment
+ * method get
+ */
+
+authRouter.get("/forum-message/:id", UserController.getMessage)
+
+
 export {authRouter}

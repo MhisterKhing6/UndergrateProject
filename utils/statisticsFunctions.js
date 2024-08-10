@@ -70,7 +70,7 @@ const taskStats = async (assignmentId) => {
         }
         //all bands computed
         //get test results
-        let testResult = await TestStatistics.findAll({where:{TaskId:task.id}, nest:true, raw:true})
+        let testResult = await TestStatistics.findAll({order:[["testNumber", "ASC"]],where:{TaskId:task.id}, nest:true, raw:true})
         //form output object
         let bands = [bad, good, veryGood, excellent]
         output.push({taskNumber:task.number, bands, testResult, attempted:stats.length})
