@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { Student, Lecturer, VerifyEmail, ResetPasswordDb, Compiler } from "../models/relationship/relations.js"
-import { UserController } from "../controllers/userController.js";
-import { ProgramController } from "../controllers/programController.js";
-import { VerifyController } from "../controllers/verficationController.js";
 import { AssignmentSController } from "../controllers/assignmentController.js";
+import { ProgramController } from "../controllers/programController.js";
+import { UserController } from "../controllers/userController.js";
+import { VerifyController } from "../controllers/verficationController.js";
+import { Lecturer, ResetPasswordDb, Student, VerifyEmail } from "../models/relationship/relations.js";
 //Routers
 let nonAuthRouth = Router()
 
@@ -134,10 +134,17 @@ nonAuthRouth.get("/compiler/:id", async (req, res) => {
         return AssignmentSController.compilerDetials(req, res)
 })
 
+
 //refresh token
 nonAuthRouth.post("/auth/student/refresh/token", UserController.refreshToken)
 
 nonAuthRouth.post("/auth/lecturer/refresh/token", async (req, res) => {
         return await UserController.refreshToken(req, res, Lecturer)
 })
-export {nonAuthRouth}
+
+//export and import
+nonAuthRouth.get("/download/submission/:id", async (req, res) => {
+                return await AssignmentSController.ExportMarks(req, res, "ass")
+})
+export { nonAuthRouth };
+

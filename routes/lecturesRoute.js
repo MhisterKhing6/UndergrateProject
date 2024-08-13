@@ -108,4 +108,21 @@ lecturerRoute.get("/assignment/view/:id", AssignmentSController.AssignmentDetail
  * get assignment with id
  */
 lecturerRoute.get("/assignment/stats/:id", AssignmentSController.AssignmentStatistics)
+
+/**
+ * export assignment
+ */
+lecturerRoute.get("/export/assignment/:id", AssignmentSController.ExportMarks)
+
+/**
+ * export task task
+ */
+lecturerRoute.get("/export/tasks/:id", async (req, res) => {
+        return await AssignmentSController.ExportMarks(req, res, "task")
+})
+
+/**
+ * lecturer routes
+ */
+lecturerRoute.get("/submission/:id", AssignmentSController.ViewSubmissionAssignment)
 export {lecturerRoute}

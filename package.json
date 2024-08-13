@@ -34,10 +34,13 @@
     "nodemailer-express-handlebars": "^6.1.2",
     "nodemon": "^3.1.0",
     "package-lock.json": "^1.0.0",
+    "pdfkit": "^0.15.0",
+    "pdfmake": "^0.2.11",
     "sequelize": "^6.37.1",
     "sha1": "^1.1.1",
     "shelljs": "^0.8.5",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "chai": "^5.1.0",

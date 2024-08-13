@@ -2,10 +2,11 @@
 controls assignment endpoints
 */
 
+import { Op } from "sequelize"
 import { v4 } from "uuid"
-import { Assignment, AssignmentClasses, AssignmentRequirement, Class, Compiler, Course, Program, Task } from "../models/relationship/relations.js"
+import { Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, Compiler, Course, Program, Student, Task, TaskResult } from "../models/relationship/relations.js"
 import { deleteTaskFile, readTaskFile, saveTaskFile, writeToFile } from "../utils/fileHandler.js"
-import { assignmentStats, taskStats } from "../utils/statisticsFunctions.js"
+import { assignmentStats, exportExcell, exportPdf, taskStats } from "../utils/statisticsFunctions.js"
 import { verifyMandatoryFields } from "../utils/verificationFunctions.js"
 
 class AssignmentSController {
@@ -66,6 +67,16 @@ class AssignmentSController {
             }}
         )
         await entry.destroy()
+        await Task.destroy({
+            where: {
+                AssignmentId:id
+            }
+        })
+        await AssignmentResult.destroy({
+            where: {
+                AssignmentId:id
+            }
+        })
         return res.status(200).json({reason: "operation success"})
     }
 
@@ -125,13 +136,13 @@ class AssignmentSController {
     static addClass = async (req, res) => {
         //add class to assignment
         let classDetails = req.body
-        if(!(classDetails.classId && classDetails.assId))
-            return res.status(400).json({"reason": "fileds missing, fields name classId, assId"})
-        let assignement = await Assignment.findByPk(assId)
+        if(!(classDetails.ClassId && classDetails.AssignmentId))
+            return res.status(400).json({"reason": "fileds missing, fields name ClassId, AssignmentId"})
+        let assignement = await Assignment.findByPk(classDetails.AssignmentId)
         if(!assignement)
             return res.status(400).json({"reason": "assignment not found"})
         //save the class to assignment
-        await assignement.addClass(await Class.findByPk(classDetails.classId))
+        await assignement.addClass(await Class.findByPk(classDetails.ClassId))
         return res.status(200).json({"reason": "success"})
     }
     static addTask = async (req, res) => {
@@ -269,7 +280,7 @@ class AssignmentSController {
         raw:true,
         nest:true
         })
-        let tasks = await Task.findAll({where:{AssignmentId:assId}, raw:true, nest:true})
+        let tasks = await Task.findAll({where:{AssignmentId:assId}, order:[["number","ASC"]], raw:true, nest:true})
         assWithDetails.tasks = tasks
         return res.status(200).json(assWithDetails)
         } catch(err) {
@@ -292,8 +303,75 @@ class AssignmentSController {
         return res.status(200).json({assStats: {...assStats, title:assignment.title}, "taskStats": tasks})
         } catch(error) {
             console.log(error)
-        } 
+        }
         return res.status(500).json({"message": "wrong assignment id"})
     }
+
+    static ExportMarks = async (req, res, type) => {
+        let id  = req.params.id
+        try {
+        let exportType = req.query
+        let scores = []
+        if(type === "task")
+            scores  = await TaskResult.findAll({nest:true, raw:true,where:{TaskId:id}, include: {model:Student}})
+        else {
+            scores  = await AssignmentResult.findAll({where:{AssignmentId:id}, nest:true, raw:true, include: {model:Student}})
+        }
+        let mapResults = scores.map(val => {
+            if(type === "task")
+                return {name:val.Student.name, index:val.Student.index, marks:val.completion}
+            else
+                return {name:val.Student.name, index:val.Student.index, marks:val.mark}
+        })
+        let filePath = null
+        if(exportType.type === "pdf") {
+        filePath = await exportPdf(mapResults, id)
+        }//call pdf export function
+        else {
+        filePath = await exportExcell(mapResults, id)
+        }
+        //call excel export function
+        return filePath ? res.status(200).download(filePath) : res.status(501).json({message:"internal error"})
+    }catch(error){
+        console.log(error)
+        return res.status(500).json({message:"internal error"})
+
+    } 
+    }
+
+    static ViewSubmissionAssignment = async (req , res) => {
+        //get assignment
+        try {
+        let id = req.params.id
+        let assignment = await Assignment.findByPk(id, {raw:true, attributes:["title"]})
+        if(!assignment)
+            return res.status(400).json({"message": "wrong assignment title"})
+        let assignmentClass = await AssignmentClasses.findOne({where:{AssignmentId:id}, raw:true})
+        let totalStudents = await Student.count({where:{ClassId:assignmentClass.ClassId}})
+        let query = req.query
+        let page = 1
+        let filter = {}
+        let limit = 30;
+        let offset = 0
+        if (query.search)
+            {
+                filter.index = {[Op.like]:`%${query.search}%` }
+            }
+        
+        if(query.page) {
+            offset = limit * (query.page - 1)
+            page = query.page
+        }
+        let {count, rows} = await AssignmentResult.findAndCountAll({where: {AssignmentId:id}, 
+            include: {model: Student, where: filter},offset, nest:true, raw:true, limit
+        })
+        return res.status(200).json({totalStudents, title:assignment.title, limit, items: rows, page, totalCount: count})
+    }catch(error) {
+        console.log(error)
+        return res.status(500).json({message:"internal"})
+    }
+    }
+
+
 }
 export { AssignmentSController }

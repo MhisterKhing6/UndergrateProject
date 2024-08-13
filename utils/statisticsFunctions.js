@@ -1,4 +1,9 @@
+import path from "path";
+import pdfMake from 'pdfmake/build/pdfmake.js';
+import pdfFonts from 'pdfmake/build/vfs_fonts.js';
+import XLSX from "xlsx";
 import { Assignment, AssignmentClasses, AssignmentResult, Student, Task, TaskResult, TestStatistics } from "../models/relationship/relations.js";
+import { createFolder, writeToFile } from "./fileHandler.js";
 const assignmentStats = async (assignmentId) => {
     let good = 0;
     let bad = 0;
@@ -78,4 +83,117 @@ const taskStats = async (assignmentId) => {
     return output
 }
 
-export { assignmentStats, taskStats };
+const exportExcell = async (data, id) => {
+    try {
+    let folderPath = path.join(path.resolve("."),"assignmentFiles")
+    let fullPath = path.join(folderPath, `${id}.xlsx`)
+    await createFolder(folderPath)
+
+    // Define the headers and data
+    const headers = ['Name', 'Index', 'Marks'];
+    /*const data = [
+        { name: 'John Doe', index: '001', marks: 85 },
+        { name: 'Jane Smith', index: '002', marks: 92 },
+        { name: 'Sam Johnson', index: '003', marks: 78 },
+        { name: 'Emily Davis', index: '004', marks: 89 },
+    ]; */
+    
+    // Create an array of arrays (rows) for Excel
+    const worksheetData = [
+        headers, // Header row
+        ...data.map(row => [row.name, row.index, row.marks]) // Data rows
+    ];
+    
+    // Create a new workbook and add the worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // Adjust column widths (optional, to ensure proper alignment)
+    worksheet['!cols'] = [
+        { wch: 50 },  // Width of the "Name" column
+        { wch: 20 },  // Width of the "Index" column
+        { wch: 20 }   // Width of the "Marks" column
+    ];
+    
+    // Append the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+    
+    // Write the workbook to a file
+    XLSX.writeFile(workbook, fullPath);
+    return fullPath
+ } catch(error) {}
+    console.log(error)
+}
+
+const exportPdf = async (data, id) => {
+    
+    try {
+
+        function getPdfBuffer(docDefinition) {
+            return new Promise((resolve, reject) => {
+                const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+                pdfDocGenerator.getBuffer((buffer) => {
+                    if (buffer) {
+                        resolve(buffer);
+                    } else {
+                        reject(new Error('Failed to generate PDF buffer'));
+                    }
+                });
+            });
+        }
+
+    let folderPath = path.join(path.resolve("."),"assignmentFiles")
+    let fullPath = path.join(folderPath, `${id}.pdf`)
+    await createFolder(folderPath) 
+    // Create a new PDF document
+
+    // Pipe the PDF into a writable stream
+    
+    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+    
+    // Define the document definition
+    const docDefinition = {
+        content: [
+            { text: 'Student Marks Report', style: 'header' },
+            {
+                table: {
+                    headerRows: 1,
+                    widths: ['*', 'auto', 'auto'], // Adjust column widths
+                    body: [
+                        [{ text: 'Name', style: 'tableHeader' }, 
+                         { text: 'Index', style: 'tableHeader' }, 
+                         { text: 'Marks', style: 'tableHeader' }], // Table header
+                        ...data.map(val => {
+                            return [val.name, val.index, val.marks]
+                        })
+                    ]
+                }
+            }
+        ],
+        styles: {
+            header: {
+                fontSize: 20,
+                bold: true,
+                alignment: 'center',
+                margin: [0, 0, 0, 20]
+            },
+            tableHeader: {
+                bold: true,
+                fontSize: 12,
+                color: 'black'
+            }
+        }
+    };
+    
+    // Generate the PDF and save it to a file
+    let buffer = await getPdfBuffer(docDefinition)
+    await writeToFile(fullPath, buffer)
+    return fullPath
+    }catch(error) {
+        console.log(error)
+        return null
+    }
+
+}
+export { assignmentStats, exportExcell, exportPdf, taskStats };
+
