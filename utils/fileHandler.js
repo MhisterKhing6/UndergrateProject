@@ -55,9 +55,9 @@ let writeForumFile = async (base64, assignmentId, type,userId, origName)=> {
     try {
     let file = await decodeDataBase64(base64)
     //create relative filename for url
-    let relativePath = path.join("public","forum", assignmentId, type)
+    let relativePath = path.join("public","forum", assignmentId, type, userId)
     //create file name
-    let fileName = `${userId}${path.extname(origName)}`
+    let fileName = `${v4()}${path.extname(origName)}`
     //create full path folder
     let fullPath = path.join(path.resolve("."),relativePath)
     //create folder if not exist
@@ -65,6 +65,7 @@ let writeForumFile = async (base64, assignmentId, type,userId, origName)=> {
         await createFolder(fullPath)
     //generate full file name with fileName
     fullPath = path.join(fullPath, fileName)
+    console.log(fullPath)
     //write the file to file
     let obs = await writeToFile(fullPath, file)
     //add file filename to relative path to generate url

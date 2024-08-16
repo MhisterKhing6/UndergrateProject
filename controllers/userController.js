@@ -1,8 +1,9 @@
 /**Controller for student endpoints */
 import sha1 from 'sha1'
+import { io } from '../app.js'
 import { Class } from "../models/programs/class.js"
 import { Program } from "../models/programs/program.js"
-import { Message, Notification } from '../models/relationship/relations.js'
+import { File, Message, Notification } from '../models/relationship/relations.js'
 import { Lecturer } from "../models/users/lecturer.js"
 import { Student } from "../models/users/student.js"
 import { VerifyEmail } from "../models/verifications/emailVerication.js"
@@ -11,6 +12,8 @@ import { getToken, verifyToken } from "../utils/authenticationFunctions.js"
 import { sendVerification } from "../utils/emailHandler.js"
 import { generateFileUrl, writeBinaryFile, writeForumFile } from "../utils/fileHandler.js"
 import { validateEmail, validatePassword, verifyMandatoryFields } from "../utils/verificationFunctions.js"
+
+
 
 export class UserController {
     static register = async (req, res, model ) => {
@@ -164,7 +167,6 @@ export class UserController {
         //request contains request object
         //response contains response object
         let userDetails = req.body
-        console.log(userDetails)
         try {
             if(!(userDetails.name || userDetails.profilePic || userDetails.githubUserName)) 
                 return res.status(400).json({"reason": "no fields given"})
@@ -200,15 +202,20 @@ export class UserController {
             return res.status(400).json({"message": "not all fields given"})
         //check the type of message and handle according
         let message = null
-        if(type !== "text") {
-            let paths  = await writeForumFile(messageBody.data, messageBody.AssignmentId, messageBody.type, req.user.id, messageBody.fileName)
+        if(messageBody.type !== "text") {
+            let files = []
+            message = Message.build({parentMessageId:messageBody.parentMessageId,userId:req.user.id, userName:req.user.name, userProfile:req.user.profileUrl, type:messageBody.type, AssignmentId:messageBody.AssignmentId, message:messageBody.message})
+            for(const file of messageBody.files ) {
+                let paths  = await writeForumFile(file.fileUrl.split("base64,")[1], messageBody.AssignmentId, messageBody.type, req.user.id, file.fileName)
             if(!paths)
                 return res.status(500).json({message:"cant write file to disk"})
             //generate file url
             let fileUrl = generateFileUrl(paths.relativePath)
-            message = Message.build({userId:req.user.id, userName:req.user.name, userProfile:req.user.profileUrl, ...messageBody})
+            
             //save file entry
-            await File.create({url:fileUrl, diskPath:paths.fullPath, MessageId:message.id, type:messageBody.type })
+            files.push(File.create({size:file.size, fileName:file.fileName,url:fileUrl, diskPath:paths.fullPath, MessageId:message.id, type:file.type }))
+            }
+            await Promise.all(files)
             //handle operations
         } else {
             message = Message.build({userId:req.user.id, userName:req.user.name, userProfile:req.user.profileUrl, ...messageBody})
@@ -221,31 +228,60 @@ export class UserController {
             if(!message)
                 return res.status(400).json({message: "cant find parent message"})
             //form notification message
-            await Notification.create({userId:message.userId, MessageId:message.id, AssignmentId:message.AssignmentId, replyName:req.user.name})
+            await Notification.create({userId:message.userId, MessageId:message.id, AssignmentId:message.AssignmentId, replyName:message.userName})
+        }
+        let sockets = await io.fetchSockets()
+        for (const socket of sockets) {
+            if(socket.id !== messageBody.socketId)
+                socket.emit(messageBody.AssignmentId, {name:req.user.name, profileUrl:req.user.profileUrl, ...messageBody, me:false})
         }
         return res.status(200).json({"messageId": message.id})
         }catch(error) {
             console.log(error)
-            return res.status(501).json({"message": "internale error"})
+            return res.status(501).json({"message": "internal error"})
         }
     }
-
+    //delete message 
+    static deleteMessage = async (req, res) => {
+        let id = req.params.id
+        try {
+            await Message.destroy({where:{id:id}})
+            return res.status(200).json({"message": "deleted"})
+        }catch(error) {
+            console.log(error)
+            return res.status(500).json({"message": "not implemented"})
+        }
+    }
     //get message
     static getMessage = async (req, res) => {
         try {
         //get message
         let pagination = req.query
         let assId = req.params.id
-        if(!pagination.page || !pagination.limit) {
-            pagination.page = 0
-            pagination.limit = 50
+        pagination.limit = 20
+        if(!pagination.page) {
+            pagination.page = 1
         }
-        let offset = pagination.page * pagination.limit
-        const {count, rows} = await Message.findAndCountAll({nest:true, raw:true, where: {AssignmentId:assId},limit:pagination.limit, offset, include:{model:Message}, order:[["createdAt", "DESC"]]})
-        return res.status(200).json({items:rows, page:pagination.page, limit:pagination.limit, totalCount:count})
+        let offset = (pagination.page - 1) * pagination.limit
+        const {count, rows} = await Message.findAndCountAll({order: [["createdAt", "DESC"]],nest:true, raw:true, where: {AssignmentId:assId},limit:pagination.limit, offset, include:[{model:Message, as:"parentMessage", required:false}]})
+        let output = []
+        //finds all file info and return
+        for(const chat of rows) {
+            if(chat.typ !== "text") {
+                chat.files = await File.findAll({where:{MessageId:chat.id}, raw:true, nest:true, attributes:["fileName", "size", ["url","fileUrl"], "id" ]})
+            }
+            output.push(chat)
+        }
+        return res.status(200).json({userId: req.user.id, items:output, page:pagination.page, limit:pagination.limit, totalCount:count})
     }catch(error) {
-        console.log(error)
+        //console.log(error)
         return res.status(500).json({"message": "internal error"})
     }
+  }
+
+  static downloadForumFile = async (req, res) => {
+  let id = req.params.id
+  let fileDetails = await File.findByPk(id, {raw:true})
+    return res.download(fileDetails.diskPath, fileDetails.fileName)
   }
 }

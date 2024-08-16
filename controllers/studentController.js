@@ -302,8 +302,10 @@ export class StudentController {
          //compile codes here
          let genRequirementMark = 0;
          let genRequirementResult = []
+         let genMarkTest = false
          let requirements   = await AssignmentRequirement.findAll({where: {AssignmentId:task.AssignmentId}})
          if(true){
+            genMarkTest = true
             if(true)
                 {
                     //run coding standard function
@@ -376,6 +378,8 @@ export class StudentController {
          let lesserThanPrevMark = true
          //add marks obtain from coding standards
          studentMarkResult.marks += genRequirementMark
+         let totalMarks = task.totalMarks  + (genMarkTest ? 10 : 0)
+         studentMarkResult.marks = (studentMarkResult.marks / totalMarks) * 100
          //save option here
          let savedTaskResult = await TaskResult.findOne({where: {TaskId:task.id, StudentId:req.user.id}})
          let totallAssResult = await AssignmentResult.findOne({where: {StudentId:req.user.id, AssignmentId:task.AssignmentId}})
@@ -455,9 +459,11 @@ export class StudentController {
         let solutionFileList = checkSolutionFile(markSpacePath, task.studentSolutionFileNames, false)
          //compile codes here
          let genRequirementMark = 0;
+         let genTest = false
          let genRequirementResult = []
          let requirements   = await AssignmentRequirement.findAll({where: {AssignmentId:task.AssignmentId}})
          if(true){
+            genTest = true
             if(true)
                 {
                     //run coding standard function
@@ -542,6 +548,8 @@ export class StudentController {
          let lesserThanPrevMark = true
          //add marks obtain from coding standards
          studentMarkResult.marks += genRequirementMark
+         let totalMarks = task.totalMarks + (genTest ? 10 : 0)
+         studentMarkResult.marks = (studentMarkResult.marks / totalMarks) * 100
          //save option here
          let savedTaskResult = await TaskResult.findOne({where: {TaskId:task.id, StudentId:req.user.id}})
          let totallAssResult = await AssignmentResult.findOne({where: {StudentId:req.user.id, AssignmentId:task.AssignmentId}})

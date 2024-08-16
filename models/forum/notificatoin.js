@@ -11,13 +11,19 @@ Notification.init({
     userId: { //Name of the programming languge
         type: DataTypes.STRING, allowNull: false
     },
+    MessageId: { //Name of the programming languge
+        type: DataTypes.STRING, allowNull: false
+    },
+    MessageId: { //Name of the programming languge
+        type: DataTypes.STRING, allowNull: false
+    },
     replyName: { //Name of the programming languge
         type: DataTypes.STRING, allowNull: false
     },
     id: { // use to unqiuly identify the notification
-        type: DataTypes.UUID,
-        primaryKey: true,
-        defaultValue: DataTypes.UUIDV4
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey:true
      },
      read : {
         type:DataTypes.BOOLEAN, defaultValue:false

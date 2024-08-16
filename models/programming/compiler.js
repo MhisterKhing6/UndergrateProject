@@ -36,7 +36,14 @@ Compiler.init({
      },
      extension : {
       type: DataTypes.STRING, allowNull: false
-  }
+    },
+    explanationExamples: {
+        type: DataTypes.TEXT, allowNull: false,
+    },
+    testExamples : {
+        type: DataTypes.TEXT, allowNull: false,
+    }
+
 }, {sequelize:databaseConnection})
 
 export {Compiler}

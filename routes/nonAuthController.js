@@ -134,6 +134,7 @@ nonAuthRouth.get("/compiler/:id", async (req, res) => {
         return AssignmentSController.compilerDetials(req, res)
 })
 
+nonAuthRouth.get("/forum-file/:id", UserController.downloadForumFile)
 
 //refresh token
 nonAuthRouth.post("/auth/student/refresh/token", UserController.refreshToken)

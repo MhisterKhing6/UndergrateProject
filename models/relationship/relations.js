@@ -4,6 +4,9 @@ import { databaseConnection } from "../../utils/databaseConnector.js";
 import { Assignment } from "../assignment/assignment.js";
 import { AssignmentRequirement } from "../assignment/assignmentRequirements.js";
 import { Task } from "../assignment/task.js";
+import { File } from "../forum/file.js";
+import { Message } from "../forum/message.js";
+import { Notification } from "../forum/notificatoin.js";
 import { Compiler } from "../programming/compiler.js";
 import { Class } from "../programs/class.js";
 import { Course } from "../programs/course.js";
@@ -16,9 +19,6 @@ import { Lecturer } from "../users/lecturer.js";
 import { Student } from "../users/student.js";
 import { VerifyEmail } from "../verifications/emailVerication.js";
 import { ResetPasswordDb } from "../verifications/passwordsReset.js";
-import { Message } from "../forum/message.js";
-import { File } from "../forum/file.js";
-import { Notification } from "../forum/notificatoin.js";
 
 const AssignmentClasses = databaseConnection.define('AssignmentClasses', {
     ClassId: {
@@ -147,19 +147,16 @@ Message.belongsTo(Assignment, {constraints:false})
 
 //relations between file and message
 Message.hasMany(File, {constraints:false})
-File.belongsTo(Message)
+File.belongsTo(Message, {constraints:false})
 
 //relationship between notification and message
-Message.hasOne(Notification, {constraints:false})
-Notification.belongsTo(Message, {constraints:false})
 
 //relation between notification and assignment id
-Assignment.hasOne(Notification, {constraints:false})
-Notification.belongsTo(Assignment)
+
 
 //relationship between message and message
 Message.belongsTo(Message, {constraints:false, as:"parentMessage"})
 
 databaseConnection.sync({alter: true})
-export {Notification,Message,File, Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, ClassCourses, Compiler, Course, Lecturer, Program, ResetPasswordDb, Student, Task, TaskResult, TestResult, TestStatistics, VerifyEmail };
+export { Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, ClassCourses, Compiler, Course, File, Lecturer, Message, Notification, Program, ResetPasswordDb, Student, Task, TaskResult, TestResult, TestStatistics, VerifyEmail };
 

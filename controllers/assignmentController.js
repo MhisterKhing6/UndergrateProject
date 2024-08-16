@@ -163,7 +163,8 @@ class AssignmentSController {
                 let taskDb = await Task.create({
                                                 id:taskId,requirement: task.requirement, examples:task.examples,
                                                 testFile: file.filePath, AssignmentId:task.AssignmentId,number:task.number,
-                                                studentSolutionFileNames:task.solutionPath
+                                                studentSolutionFileNames:task.solutionPath,
+                                                totalMarks : task.totalMarks
                                               })
                 return res.status(201).json({"taskId": taskDb.id})
 
@@ -241,7 +242,7 @@ class AssignmentSController {
 
     static getCompilersSimple = async (req, res) => {
         //get all programs
-        let compilers = await Compiler.findAll({attributes: ['name', 'id', 'extension']})
+        let compilers = await Compiler.findAll({attributes: ['name', 'id', 'extension', 'explanationExamples', 'testExamples']})
         if(!compilers)
             return res.status(401).json({"reason": "no compilers loaded"})
         return res.status(200).json(compilers)

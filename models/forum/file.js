@@ -21,6 +21,12 @@ File.init({
      },
      diskPath: {
        type:DataTypes.STRING, allowNull:true
+     },
+     fileName: {
+      type:DataTypes.STRING, allowNull:true
+    },
+     size: {
+      type:DataTypes.SMALLINT, allowNull:true,
      }
 }, {sequelize:databaseConnection})
 

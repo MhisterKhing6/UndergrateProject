@@ -69,5 +69,15 @@ authRouter.post("/forum-message", UserController.postMessage)
 
 authRouter.get("/forum-message/:id", UserController.getMessage)
 
+/**
+ * delete forum message
+ */
+authRouter.delete('/forum-message/:id', UserController.deleteMessage)
+
+/**
+ * forum file
+ */
+
+authRouter.get('/forum-file/:id', UserController.downloadForumFile)
 
 export {authRouter}

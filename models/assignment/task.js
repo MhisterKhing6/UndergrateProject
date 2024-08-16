@@ -27,7 +27,11 @@ Task.init({
         primaryKey: true,
         defaultValue: DataTypes.UUIDV4
      },
+     totalMarks : {
+        type: DataTypes.INTEGER,
+        defaultValue: 100
 
+     }
 
      //assignmentId: relationship atrribute that identify the assignment the task belongs to
      //exampleScriptsId: example id that uniquly identify example scripst for the assignment
