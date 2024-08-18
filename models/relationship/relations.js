@@ -88,8 +88,8 @@ Assignment.belongsTo(Lecturer)
 
 //relationship between class and assignemnt
 
-Assignment.belongsToMany(Class, {through: AssignmentClasses , constraints: false, onDelete:"CASCADE"})
-Class.belongsToMany(Assignment, {through: AssignmentClasses, constraints: false, onDelete:"CASCADE"})
+Assignment.belongsTo(Class, {constraints: false})
+Class.hasMany(Assignment, {constraints: false, onDelete:"CASCADE"})
 
 //relationship between course and class
 Program.hasMany(Course, {constraints: false})
@@ -104,21 +104,21 @@ Course.belongsToMany(Class, {through:ClassCourses, constraints: false})
 
 
 //relationship between task and assignment
-Assignment.hasMany(Task,  {constraints: false})
+Assignment.hasMany(Task,  {constraints: false, onDelete: "CASCADE"})
 Task.belongsTo(Assignment, {constraints: false})
 
 //relations between Assignment and compiler
-Compiler.hasMany(Assignment,  {constraints: false})
+Compiler.hasMany(Assignment,  {constraints: false, onDelete:"CASCADE"})
 Assignment.belongsTo(Compiler)
 
 //relationship between student TaskResult
 Student.hasMany(TaskResult, {constraints:false})
 TaskResult.belongsTo(Student, {constraints:false})
 //RelationShip between taskResult and Task
-Task.hasMany(TaskResult, {constraints:false})
+Task.hasMany(TaskResult, {constraints:false, onDelete: "CASCADE"})
 TaskResult.belongsTo(Task, {constraints:false})
 //RelationShip between assignment and Task result
-Assignment.hasMany(TaskResult, {constraints:false})
+Assignment.hasMany(TaskResult, {constraints:false, onDelete:"CASCADE"})
 TaskResult.belongsTo(Assignment, {constraints:false})
 /////
 //relationship between student and assignment results
@@ -126,12 +126,12 @@ Student.hasMany(AssignmentResult,{constraints:false} )
 AssignmentResult.belongsTo(Student, {constraints:false})
 
 //relationship Assignment student and assignment results
-Assignment.hasMany(AssignmentResult,{constraints:false} )
+Assignment.hasMany(AssignmentResult,{constraints:false, onDelete: "CASCADE"} )
 AssignmentResult.belongsTo(Assignment, {constraints:false})
 
 
 //relations between test result and task
-Task.hasMany(TestStatistics)
+Task.hasMany(TestStatistics, {constraints:false, onDelete: "CASCADE"})
 TestStatistics.belongsTo(Task)
 
 //relationship between task and test results
@@ -142,11 +142,11 @@ Student.hasMany(TestResult, {constraints:false})
 TestResult.belongsTo(Student, {constraints:false})
 
 //relationships between message and assignment
-Assignment.hasMany(Message, {constraints:false})
+Assignment.hasMany(Message, {constraints:false, onDelete: "CASCADE"})
 Message.belongsTo(Assignment, {constraints:false})
 
 //relations between file and message
-Message.hasMany(File, {constraints:false})
+Message.hasMany(File, {constraints:false, onDelete: "CASCADE"})
 File.belongsTo(Message, {constraints:false})
 
 //relationship between notification and message

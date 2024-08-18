@@ -38,9 +38,8 @@ const assignmentStats = async (assignmentId) => {
     let attempted = assignmentScores.length
     
     let assignment = await Assignment.findByPk(assignmentId)
-    let assClass = await AssignmentClasses.findOne({where:{AssignmentId:assignment.id}})
     //find total student in the class
-    let totalStudent = await Student.findAll({where:{ClassId:assClass.ClassId}, raw:true, attributes:["id"]})
+    let totalStudent = await Student.findAll({where:{ClassId:assignment.ClassId}, raw:true, attributes:["id"]})
     if(totalScore)
         avg = totalScore / attempted
     //form assignment object

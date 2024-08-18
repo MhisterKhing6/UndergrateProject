@@ -116,19 +116,16 @@ class AssignmentSController {
         for (const column of Object.keys(details)) {
             //exclude id
             if(!(column === "id" || column ==="open" || column === "createdAt" || column === "updatedAt")) {
-                if(["codingStandards", "plagiarism", "documentation"].includes(column))
+                if(["codingStandard", "plagiarism", "documentation"].includes(column))
                     assRequiremnt[column] = details[column]
                 else if(correctColumns.includes(column)) {
                    //update information for entry
                    assignment[column] = details[column] 
-                } else {
-                    return res.status(400).json({"reason": "wrong column entry given", "wrong column": column})
-                }
+                } 
             }
         }
         //save information in the database
         await assignment.save()
-        console.log(assignment)
         await assRequiremnt.save()
         return res.status(200).json({"reason": "success", assignmentId: details.id})
     }
@@ -374,5 +371,30 @@ class AssignmentSController {
     }
 
 
+    static studentReport = async (req, res) => {
+        let details = req.body
+        //check if student index and course code is given
+        if(!(details.studentId && details.courseCode)) 
+            return res.status(400).json({"message": "fields missing"})
+        let student = await Student.findOne({include: [{model:Class}], where: {studentId: details.studentId}, raw:true, nest:true})
+        if(!student) 
+            return res.status(400).json({message: "student not found"})
+        //find course code
+        let course = await Course.findOne({include: [{model:Program}], where: {courseCode: details.courseCode}, raw:true, nest:true})
+        if(!course)
+            return res.status(400).json({"message": "course not found"})
+        //find all the assignments
+        let assignments  =  await Assignment.findAll({where: {ClassId:student.ClassId, CourseId:course.id}, raw:true, order:[["createdAt", 'ASC']]})
+        //find all the student marks and calculate
+        let scores = []
+        for (const assignement of assignments) {
+            let student_result = await AssignmentResult.findOne({where: {AssignmentId:assignement.id, studentId:student.id}, raw:true, nest:true})
+            console.log(student_result)
+            scores.push({date:assignement.createdAt, mark:student_result ? student_result.mark : 0, attempted: student_result ? true : false})
+        }
+        let newStudent = {studentId:student.studentId, email:student.email, "class": student.Class.className, name:student.name, profileUrl:student.profileUrl, program:course.Program.programName}
+        return res.status(200).json({student:newStudent, scores, course: {name:course.courseName, code:course.courseCode}})
+        //course and student
+    }
 }
 export { AssignmentSController }

@@ -83,6 +83,8 @@ studentRoute.get("/close/course/assignments/:courseId", StudentController.closeC
  * domain: restricted
  */
 studentRoute.get("/tasks/assignment/:assId", StudentController.assignmentTasks)
+
+studentRoute.get("/score/assignment-course/:courseId", StudentController.ViewGrades)
 export { studentRoute };
 
 /**

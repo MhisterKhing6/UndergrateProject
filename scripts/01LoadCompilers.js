@@ -10,58 +10,51 @@ extension:".js", enviroment:"Js",name: "javascript", "version": "22.00",
     <li>Your file should use the js file extension </li>
     <li>All of your functions must be exported </li>
 </ul>`, setupLink: "https://nodejs.org/en",
-testExamples : 
-`
-//A simple test to for adding two numbers
-//The student is expected to submit the solution in a file question.js
+testExamples:`
+//A Simple test for  finding largestInteger
+//The student is to write the the function in file question1.js and submit
+import fs from ('fs');
+import { largestInteger } from './question1';  // Import the function from question1.js
 
-import { writeFileSync } from 'fs';
-// Import the student's function
-import { addNumbers } from './question.js';
-
-// Array of test cases
-const testCases = [
-    { firstNumber: 3, secondNumber: 5, expectedResult: 8 },
-    { firstNumber: 10, secondNumber: 20, expectedResult: 30 },
-    { firstNumber: -5, secondNumber: 5, expectedResult: 0 },
-    { firstNumber: 100, secondNumber: 250, expectedResult: 350 }
-];
-
-// Function to write test results to a file
 function writeTestResults() {
+    // Test cases with unique marks for each test
+    const testCases = [
+        { firstNumber: 20, lastNumber: 4, expected: 20, testNumber: 1, marks: 5, feedback: "Test case passed for number divisible by 10." },
+        { firstNumber: 30, lastNumber: 40, expected: 40, testNumber: 2, marks: 10, feedback: "Test case passed for number divisible by 10." },
+        { firstNumber: 80, lastNumber: 9, expected: 80, testNumber: 3, marks: 15, feedback: "Test case passed for number not divisible by 10." },
+        { firstNumber: 0, lastNumber: 10, expected: 10, testNumber: 4, marks: 10, feedback: "Test case passed for zero which is divisible by 10." }
+    ];
+
     let totalMarks = 0;
     let output = '';
 
-    // Loop through the test cases
-    for (let i = 0; i < testCases.length; i++) {
-        const result = addNumbers(testCases[i].firstNumber, testCases[i].secondNumber);
-        let status = '';
-        let feedback = '';
-
-        if (result === testCases[i].expectedResult) {
-            status = 'pass';
-            feedback = 'correct';
-            totalMarks += 10;
-        } else {
-            status = 'failed';
-            feedback = 'incorrect';
+    testCases.forEach((testCase) => {
+        const result = largestInteger(testCase.firstNumber, testCase.lastNumber);
+        const status = result === testCase.expected ? 'pass' : 'failed';
+        
+        // Add marks if the test passed
+        if (status === 'pass') {
+            totalMarks += testCase.marks;
         }
 
-// Generating output
-    output += "status=" + status + "\\n" +
-    "feedback=" + feedback + "\\n" +
-    "testNumber=" + (i + 1) + "\\n" +
-    ";\\n";
-    }
+        // Save the test result to the output string
+        output += \`status=\${status}\\\n\`;
+        output += \`feedback=\${testCase.feedback}\\\n\`;
+        output += \`testNumber=\${testCase.testNumber}\\\n\`;
+        output += ';\\n';
+    });
 
-    // Write total marks
-    output += "marks=" + totalMarks + "\\n";
+    // Add the total marks to the output
+    output += \`marks=\${totalMarks}\\\n\`;
 
-    // Write output to result.txt
-    writeFileSync('result.txt', output, 'utf8');
+    // Write the output to result.txt
+    fs.writeFileSync('result.txt', output);
 }
-writeTestResult();
-`,
+
+// Run the test
+writeTestResults();
+`
+,
 explanationExamples:`
 //explanation examples give more information about the task in developer view
 import { addNumbers } from './question.js';
@@ -100,81 +93,72 @@ extension:".c++,.cpp","enviroment":"c++", "name": "c++", "version": "2.xx",
     <li>All your files must be executable </li>
     <li>The length of your files will be tested using wc </li>
 </ul>`, setupLink: "https://gcc.gnu.org",
-testExamples:`
-//A test for adding two numbers
-//The student is expected to write the function definition in a file question 1
-//The file will be compiler together with submission file
-
+testExamples:
+`
+// A test for  largestInteger
+// The Student solution will be compiled together with the function
 #include <iostream>
 #include <fstream>
 #include <string>
 
-// Function declaration to use the student's function
-int largestInteger(int a, int b);
+// Function declaration the student definition for the funtion will be compiled together with the tes
+int largestInteger(int firstNumber, int lastNumber);
 
-// Function to write test results to a file
 void writeTestResults() {
-    std::ofstream outputFile("result.txt");
-
-    // Check if the file is open
-    if (!outputFile.is_open()) {
-std::cerr << "Error: Could not open file for writing." << std::endl;
-return;
-    }
-
-    std::string output = "";
-    int totalMarks = 0;
-
+    // Test cases with unique marks for each test
     struct TestCase {
-    int firstNumber;
-    int secondNumber;
-    int expectedResult;
-    }
-    testCases[] = {
-                {30, 50, 50},
-                {50, 100, 100},
-                {150, 100, 150},
-                {350, 100, 350}
-                    };
+        int firstNumber;
+        int lastNumber;
+        int expected;
+        int testNumber;
+        int marks;
+        std::string feedback;
+    };
 
-    int numTests = sizeof(testCases) / sizeof(testCases[0]);
+    TestCase testCases[] = {
+        {20, 4, 20, 1, 5, "Test case passed for number divisible by 10."},
+        {30, 40, 40, 2, 10, "Test case passed for number divisible by 10."},
+        {80, 9, 80, 3, 15, "Test case passed for number not divisible by 10."},
+        {0, 10, 10, 4, 10, "Test case passed for zero which is divisible by 10."}
+    };
 
-    // Loop through the test cases
-    for (int i = 0; i < numTests; i++) {
-        int result = largestInteger(testCases[i].firstNumber, testCases[i].secondNumber);
-        std::string status = "";
-        std::string feedback = "";
+    int totalMarks = 0;
+    std::string output;
 
-        if (result == testCases[i].expectedResult) {
-            status = "pass";
-            feedback = "amazing";
-            totalMarks += 10;
-        } else {
-            status = "failed";
-            feedback = "wrong";
+    for (const auto& testCase : testCases) {
+        int result = largestInteger(testCase.firstNumber, testCase.lastNumber);
+        std::string status = (result == testCase.expected) ? "pass" : "failed";
+        
+        // Add marks if the test passed
+        if (status == "pass") {
+            totalMarks += testCase.marks;
         }
 
-// Using normal string concatenation with indentation for C++ formatting
-output += "status=" + status + "\\n" +
-  "feedback=" + feedback + "\\n" +
-  "testNumber=" + std::to_string(i + 1) + "\\n" +
-  ";\\n";
+        // Save the test result to the output string
+        output += "status=" + status + "\\n";
+        output += "feedback=" + testCase.feedback + "\\n";
+        output += "testNumber=" + std::to_string(testCase.testNumber) + "\\n";
+        output += ";\\n";
     }
 
-    // Write total marks with indentation
+    // Add the total marks to the output
     output += "marks=" + std::to_string(totalMarks) + "\\n";
 
-    // Write the final string to the file
-    outputFile << output;
-
-    // Close the file
-    outputFile.close();
+    // Write the output to result.txt
+    std::ofstream file("result.txt");
+    if (file.is_open()) {
+        file << output;
+        file.close();
+    } else {
+        std::cerr << "Unable to open file for writing.\\n";
+    }
 }
 
 int main() {
     writeTestResults();
     return 0;
 }
+
 `,
 explanationExamples:`
 //explanation examples give more information about the task in developer view
@@ -211,91 +195,91 @@ extension:"c",enviroment:"c", "name": "c", "version": "2.xx",
     <li>The length of your files will be tested using wc </li>
 </ul>`, setupLink: "https://gcc.gnu.org",
 testExamples : 
-"#include <stdio.h>\n" +
-"#include <string.h>\n" +
-"\n" +
-"// Function declaration to use the student's function\n" +
-"int addNumbers(int a, int b);\n" +
-"\n" +
-"void writeTestResults() {\n" +
-"    char output[2048] = \"\"; // Buffer to store the concatenated output\n" +
-"    int totalMarks = 0;\n" +
-"\n" +
-"    // Array of test cases\n" +
-"    struct TestCase {\n" +
-"int firstNumber;\n" +
-"int secondNumber;\n" +
-"int expectedResult;\n" +
-"    } testCases[] = {\n" +
-"{3, 5, 8},\n" +
-"{10, 20, 30},\n" +
-"{-5, 5, 0},\n" +
-"{100, 250, 350}\n" +
-"    };\n" +
-"\n" +
-"    int numTests = sizeof(testCases) / sizeof(testCases[0]);\n" +
-"\n" +
-"    // Start the JS string variable\n" +
-"    strcat(output, \"const testResults = \\\"\\n\");\n" +
-"\n" +
-"    // Loop through the test cases\n" +
-"    for (int i = 0; i < numTests; i++) {\n" +
-"int result = addNumbers(testCases[i].firstNumber, testCases[i].secondNumber);\n" +
-"char status[10] = \"\";\n" +
-"char feedback[10] = \"\";\n" +
-"\n" +
-"if (result == testCases[i].expectedResult) {\n" +
-"    strcpy(status, \"pass\");\n" +
-"    strcpy(feedback, \"correct\");\n" +
-"    totalMarks += 10;\n" +
-"} else {\n" +
-"    strcpy(status, \"failed\");\n" +
-"    strcpy(feedback, \"incorrect\");\n" +
-"}\n" +
-"\n" +
-"// Using normal string concatenation with indentation for JS formatting\n" +
-"char buffer[256];\n" +
-"sprintf(buffer, \"    status=%s\\\\n    feedback=%s\\\\n    testNumber=%d\\\\n    ;\\\\n\", status, feedback, i + 1);\n" +
-"strcat(output, buffer);\n" +
-"    }\n" +
-"\n" +
-"    // Write total marks with indentation\n" +
-"    char marksBuffer[50];\n" +
-"    sprintf(marksBuffer, \"    marks=%d\\\\n\", totalMarks);\n" +
-"    strcat(output, marksBuffer);\n" +
-"\n" +
-"    // End the JS string variable\n" +
-"    strcat(output, \\\"\\\";\n" +
-"\n" +
-"    // Write the final string to the console (or you could save it to a file if needed)\n" +
-"    printf(\"%s\", output);\n" +
-"}\n" +
-"\n" +
-"int main() {\n" +
-"    writeTestResults();\n" +
-"    return 0;\n" +
-"}\n",
-
-explanationExamples: `
-//explanation examples gives more information about the task in developer view
+`
+// A simple test for finding largest number
+// The Student is function definition will be compiled together with the test file
 #include <stdio.h>
 
-// Function definition
-int addNumbers(int a, int b)
+// Function declaration
+int largestInteger(int firstNumber, int lastNumber);
+
+void writeTestResults() {
+    // Test cases with unique marks for each test
+    struct TestCase {
+        int firstNumber;
+        int lastNumber;
+        int expected;
+        int testNumber;
+        int marks;
+        const char *feedback;
+    };
+
+    struct TestCase testCases[] = {
+        {20, 4, 20, 1, 5, "Test case passed for number divisible by 10."},
+        {30, 40, 40, 2, 10, "Test case passed for number divisible by 10."},
+        {80, 9, 80, 3, 15, "Test case passed for number not divisible by 10."},
+        {0, 10, 10, 4, 10, "Test case passed for zero which is divisible by 10."}
+    };
+
+    int totalMarks = 0;
+    char output[1024] = {0}; // Buffer to accumulate the result text
+
+    for (int i = 0; i < sizeof(testCases) / sizeof(testCases[0]); i++) {
+        struct TestCase testCase = testCases[i];
+        int result = largestInteger(testCase.firstNumber, testCase.lastNumber);
+        const char *status = (result == testCase.expected) ? "pass" : "failed";
+
+        // Add marks if the test passed
+        if (status == "pass") {
+            totalMarks += testCase.marks;
+        }
+
+        // Append the test result to the output buffer
+        snprintf(output + strlen(output), sizeof(output) - strlen(output), 
+                 "status=%s\\nfeedback=%s\\ntestNumber=%d\\n;\\n", 
+                 status, testCase.feedback, testCase.testNumber);
+    }
+
+    // Append the total marks to the output buffer
+    snprintf(output + strlen(output), sizeof(output) - strlen(output), "marks=%d\\n", totalMarks);
+
+    // Write the output to result.txt
+    FILE *file = fopen("result.txt", "w");
+    if (file) {
+        fputs(output, file);
+        fclose(file);
+    } else {
+        fprintf(stderr, "Unable to open file for writing.\\n");
+    }
+}
+
+int main() {
+    writeTestResults();
+    return 0;
+}
+`,explanationExamples: 
+`
+#include <stdio.h>
+
+// Function declaration
+int largestInteger(int firstNumber, int lastNumber);
 
 int main() {
     // Test cases
-    int test1 = addNumbers(10, 5);  // should return 15
-    int test2 = addNumbers(20, 30); // should return 50
-    int test3 = addNumbers(100, 200); // should return 300
+    int test1 = largestInteger(20, 4);  // should return 20
+    int test2 = largestInteger(30, 40); // should return 40
+    int test3 = largestInteger(80, 9);  // should return 80
+    int test4 = largestInteger(0, 10);  // should return 10
 
-    // Output the results
-    printf("Test 1: %d\\n", test1);
-    printf("Test 2: %d\\n", test2);
-    printf("Test 3: %d\\n", test3);
+    // Output the results to the console
+    printf("Test 1: %s\\n", test1 == 20 ? "pass" : "fail");
+    printf("Test 2: %s\\n", test2 == 40 ? "pass" : "fail");
+    printf("Test 3: %s\\n", test3 == 80 ? "pass" : "fail");
+    printf("Test 4: %s\\n", test4 == 10 ? "pass" : "fail");
 
     return 0;
 }
+
 `
     },
 
@@ -310,72 +294,78 @@ extension:".java",enviroment: "java","name": "java", "version": "2.xx",
     <li>The length of your files will be tested using wc</li>
     <li>Your file should use the sql extension </li>
 </ul>`, setupLink: "https://nodejs.org/en",
-testExamples:`
-//the student is suppose to add implement laragestNumber number function definintion
-//in class called Question
-//the class should be saved in a file called question.java
+testExamples:
+`
+//simple test for finding laragest integer function
+//the student is suppose to write the funtion definition in a file
+//question.java. the function should be in a class Question
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-public class TestRunner {
-
+// Test class
+public class Test {
     public static void main(String[] args) {
-    // Run the test
-    writeTestResults();
+        writeTestResults();
     }
 
-    public static void writeTestResults() {
-    // Define test cases
-    Object[][] testCases = {
-        {30, 50, 50, 1},
-        {50, 100, 100, 2},
-        {150, 100, 150, 3},
-        {350, 100, 350, 4}
-    };
+    private static void writeTestResults() {
+        // Test cases with unique marks for each test
+        class TestCase {
+            int firstNumber;
+            int lastNumber;
+            int expected;
+            int testNumber;
+            int marks;
+            String feedback;
 
-int totalMarks = 0;
-
-try (PrintWriter outputFile = new PrintWriter(new FileWriter("result.txt"))) {
-    // Iterate through each test case
-    for (Object[] testCase : testCases) {
-    int firstNumber = (int) testCase[0];
-    int lastNumber = (int) testCase[1];
-    int expected = (int) testCase[2];
-    int testNumber = (int) testCase[3];
-
-    // Call the method to be tested
-    int result = Question.largestInteger(firstNumber, lastNumber);
-    String status;
-    String feedback;
-
-    // Check if the result matches the expected value
-    if (result == expected) {
-        status = "pass";
-        feedback = "amazing";
-        totalMarks += 10; // Award marks for passing
-    } else {
-        status = "failed";
-        feedback = "wrong";
-    }
-
-    // Write the test result to the file
-    outputFile.println("status=" + status);
-    outputFile.println("feedback=" + feedback);
-    outputFile.println("testNumber=" + testNumber);
-    outputFile.println(";");
+            TestCase(int firstNumber, int lastNumber, int expected, int testNumber, int marks, String feedback) {
+                this.firstNumber = firstNumber;
+                this.lastNumber = lastNumber;
+                this.expected = expected;
+                this.testNumber = testNumber;
+                this.marks = marks;
+                this.feedback = feedback;
+            }
         }
 
-    // Write the total marks to the file
-    outputFile.println("marks=" + totalMarks);
+        TestCase[] testCases = {
+            new TestCase(20, 4, 20, 1, 5, "Test case passed for number divisible by 10."),
+            new TestCase(30, 40, 40, 2, 10, "Test case passed for number divisible by 10."),
+            new TestCase(80, 9, 80, 3, 15, "Test case passed for number not divisible by 10."),
+            new TestCase(0, 10, 10, 4, 10, "Test case passed for zero which is divisible by 10.")
+        };
+
+        int totalMarks = 0;
+        StringBuilder output = new StringBuilder();
+
+        for (TestCase testCase : testCases) {
+            int result = Question.largestInteger(testCase.firstNumber, testCase.lastNumber);
+            String status = (result == testCase.expected) ? "pass" : "failed";
+            
+            // Add marks if the test passed
+            if ("pass".equals(status)) {
+                totalMarks += testCase.marks;
+            }
+
+            // Save the test result to the output string
+            output.append("status=").append(status).append("\\n");
+            output.append("feedback=").append(testCase.feedback).append("\\n");
+            output.append("testNumber=").append(testCase.testNumber).append("\\n");
+            output.append(";\\n");
+        }
+
+        // Add the total marks to the output
+        output.append("marks=").append(totalMarks).append("\\n");
+
+        // Write the output to result.txt
+        try (PrintWriter writer = new PrintWriter(new FileWriter("result.txt"))) {
+            writer.print(output.toString());
         } catch (IOException e) {
-            // Handle any IO errors
-            System.err.println("Error: Could not write to file.");
-            e.printStackTrace();
+            System.err.println("Unable to open file for writing.");
         }
     }
 }
-
 `,
 explanationExamples:`
 //explanation examples gives more information about developer view
@@ -442,51 +432,49 @@ def write_test_results():
 # Run the test
 write_test_results()
 `,
-testExamples: `
-#the student is exepcted to submit the solution in a file called question.py
-from question import largestInteger
+testExamples:
+`
+#The student is to write the function and submit in a file question.py
+from question import largestInteger  # Import the function from question.py
 
 def write_test_results():
+    # Test cases with unique marks for each test
     test_cases = [
-    {"first_number": 30, "last_number": 50, "expected": 50, "test_number": 1},
-    {"first_number": 50, "last_number": 100, "expected": 100, "test_number": 2},
-    {"first_number": 150, "last_number": 100, "expected": 150, "test_number": 3},
-    {"first_number": 350, "last_number": 100, "expected": 350, "test_number": 4},
+        {'firstNumber': 20, 'lastNumber': 4, 'expected': 20, 'testNumber': 1, 'marks': 5, 'feedback': "Test case passed for number divisible by 10."},
+        {'firstNumber': 30, 'lastNumber': 40, 'expected': 40, 'testNumber': 2, 'marks': 10, 'feedback': "Test case passed for number divisible by 10."},
+        {'firstNumber': 80, 'lastNumber': 9, 'expected': 80, 'testNumber': 3, 'marks': 15, 'feedback': "Test case passed for number not divisible by 10."},
+        {'firstNumber': 0, 'lastNumber': 10, 'expected': 10, 'testNumber': 4, 'marks': 10, 'feedback': "Test case passed for zero which is divisible by 10."}
     ]
 
     total_marks = 0
+    output = ''
 
-    with open("result.txt", "w") as output_file:
-        for test_case in test_cases:
-            first_number = test_case["first_number"]
-            last_number = test_case["last_number"]
-            expected = test_case["expected"]
-            test_number = test_case["test_number"]
+    for test_case in test_cases:
+        result = largestInteger(test_case['firstNumber'], test_case['lastNumber'])
+        status = 'pass' if result == test_case['expected'] else 'failed'
+        
+        # Add marks if the test passed
+        if status == 'pass':
+            total_marks += test_case['marks']
 
-            if largestInteger(first_number, last_number) == expected:
-                status = "pass"
-                feedback = "amazing"
-                total_marks += 10
-                    else:
-                status = "failed"
-                feedback = "wrong"
+        # Save the test result to the output string
+        output += f"status={status}\\n"
+        output += f"feedback={test_case['feedback']}\\n"
+        output += f"testNumber={test_case['testNumber']}\\n"
+        output += ';\\n'
 
-            output_file.write(f"status={status}\\n")
-            output_file.write(f"feedback={feedback}\\n")
-            output_file.write(f"testNumber={test_number}\\n")
-            output_file.write(";\n")
+    # Add the total marks to the output
+    output += f"marks={total_marks}\\n"
 
-    # Write the total marks
-    output_file.write(f"marks={total_marks}\\n")
+    # Write the output to result.txt
+    with open('result.txt', 'w') as file:
+        file.write(output)
 
 # Run the test
-if __name__ == "__main__":
-    write_test_results()
+write_test_results()
 `
-
-
-
     },
+
     {
 extension:".rb", enviroment: "ruby", "name": "ruby", "version": "3.xx",
 "requirement": `<h1>General requirement </h1>
@@ -526,54 +514,50 @@ end
 write_test_results
 `
 
+,
+testExamples:`require_relative 'question'  # Import the function from question.rb
 
-,testExamples : `
-# A simple test for testing the largest of two numbers
-# The student is to write the function definition in a file called question.rb
-
-require_relative 'question' #import student file and run the scripts
-
-# Function to write test results to a file
 def write_test_results
+  # Test cases with unique marks for each test
   test_cases = [
-    { first_number: 30, last_number: 50, expected: 50, test_number: 1 },
-    { first_number: 50, last_number: 100, expected: 100, test_number: 2 },
-    { first_number: 150, last_number: 100, expected: 150, test_number: 3 },
-    { first_number: 350, last_number: 100, expected: 350, test_number: 4 }
+    { first_number: 20, last_number: 4, expected: 20, test_number: 1, marks: 5, feedback: "Test case passed for number divisible by 10." },
+    { first_number: 30, last_number: 40, expected: 40, test_number: 2, marks: 10, feedback: "Test case passed for number divisible by 10." },
+    { first_number: 80, last_number: 9, expected: 80, test_number: 3, marks: 15, feedback: "Test case passed for number not divisible by 10." },
+    { first_number: 0, last_number: 10, expected: 10, test_number: 4, marks: 10, feedback: "Test case passed for zero which is divisible by 10." }
   ]
 
   total_marks = 0
+  output = ''
 
-  File.open('result.txt', 'w') do |output_file|
-    test_cases.each do |test_case|
-      first_number = test_case[:first_number]
-      last_number = test_case[:last_number]
-      expected = test_case[:expected]
-      test_number = test_case[:test_number]
-
-      if largestInteger(first_number, last_number) == expected
-        status = "pass"
-        feedback = "amazing"
-        total_marks += 10
-      else
-        status = "failed"
-        feedback = "wrong"
-      end
-
-      output_file.puts "status=#{status}"
-      output_file.puts "feedback=#{feedback}"
-      output_file.puts "testNumber=#{test_number}"
-      output_file.puts ";"
+  test_cases.each do |test_case|
+    result = largestInteger(test_case[:first_number], test_case[:last_number])
+    status = result == test_case[:expected] ? 'pass' : 'failed'
+    
+    # Add marks if the test passed
+    if status == 'pass'
+      total_marks += test_case[:marks]
     end
 
-    # Write the total marks
-    output_file.puts "marks=#{total_marks}"
+    # Save the test result to the output string
+    output += "status=#{status}\\n"
+    output += "feedback=#{test_case[:feedback]}\\n"
+    output += "testNumber=#{test_case[:test_number]}\\n"
+    output += ";\\n"
+  end
+
+  # Add the total marks to the output
+  output += "marks=#{total_marks}\\n"
+
+  # Write the output to result.txt
+  File.open('result.txt', 'w') do |file|
+    file.write(output)
   end
 end
 
 # Run the test
 write_test_results
-`,
+`
+
 
 
     },
@@ -586,67 +570,47 @@ extension:".php", enviroment: "php", "name": "php", "version": "3.xx",
     <li>Your file should use .rb extension </li>
     <li>wc will be use to count the length of your file </li>
 </ul>`, setupLink: "https://www.php.net",
-testExamples: `
-<?php
-
-//the student is expected to writh the definition of the code function in
-//question1.php and submit it
-
-// Include the file where largestInteger is defined
-require_once 'question1.php'; 
+testExamples:
+ `
+ <?php
+// A test for largest Integer function
+// The student is to submit the the solution in a question.php file
+// Include the function definition
+include 'question.php';
 
 function writeTestResults() {
-    // Define test cases
+    // Test cases with unique marks for each test
     $testCases = [
-        ['first_number' => 30, 'last_number' => 50, 'expected' => 50, 'test_number' => 1],
-        ['first_number' => 50, 'last_number' => 100, 'expected' => 100, 'test_number' => 2],
-        ['first_number' => 150, 'last_number' => 100, 'expected' => 150, 'test_number' => 3],
-        ['first_number' => 350, 'last_number' => 100, 'expected' => 350, 'test_number' => 4],
+        ['firstNumber' => 20, 'lastNumber' => 4, 'expected' => 20, 'testNumber' => 1, 'marks' => 5, 'feedback' => 'Test case passed for number divisible by 10.'],
+        ['firstNumber' => 30, 'lastNumber' => 40, 'expected' => 40, 'testNumber' => 2, 'marks' => 10, 'feedback' => 'Test case passed for number divisible by 10.'],
+        ['firstNumber' => 80, 'lastNumber' => 9, 'expected' => 80, 'testNumber' => 3, 'marks' => 15, 'feedback' => 'Test case passed for number not divisible by 10.'],
+        ['firstNumber' => 0, 'lastNumber' => 10, 'expected' => 10, 'testNumber' => 4, 'marks' => 10, 'feedback' => 'Test case passed for zero which is divisible by 10.']
     ];
 
     $totalMarks = 0;
+    $output = '';
 
-    // Open the file for writing
-    $outputFile = fopen("result.txt", "w");
-    if (!$outputFile) {
-        echo "Error: Could not open file for writing.\\n";
-    return;
-    }
-
-    // Iterate through each test case
     foreach ($testCases as $testCase) {
-        $firstNumber = $testCase['first_number'];
-        $lastNumber = $testCase['last_number'];
-        $expected = $testCase['expected'];
-        $testNumber = $testCase['test_number'];
+        $result = largestInteger($testCase['firstNumber'], $testCase['lastNumber']);
+        $status = ($result === $testCase['expected']) ? 'pass' : 'failed';
 
-        // Call the function to be tested
-        $result = largestInteger($firstNumber, $lastNumber);
-        $status;
-        $feedback;
-
-        // Check if the result matches the expected value
-        if ($result === $expected) {
-            $status = "pass";
-            $feedback = "amazing";
-            $totalMarks += 10; // Award marks for passing
-        } else {
-            $status = "failed";
-            $feedback = "wrong";
+        // Add marks if the test passed
+        if ($status === 'pass') {
+            $totalMarks += $testCase['marks'];
         }
 
-        // Write the test result to the file
-        fwrite($outputFile, "status={$status}\\n");
-        fwrite($outputFile, "feedback={$feedback}\\n");
-        fwrite($outputFile, "testNumber={$testNumber}\\n");
-        fwrite($outputFile, ";\\n");
+        // Save the test result to the output string
+        $output .= "status=$status\\n";
+        $output .= "feedback={$testCase['feedback']}\\n";
+        $output .= "testNumber={$testCase['testNumber']}\\n";
+        $output .= ";\\n";
     }
 
-    // Write the total marks to the file
-    fwrite($outputFile, "marks={$totalMarks}\\n");
+    // Add the total marks to the output
+    $output .= "marks=$totalMarks\\n";
 
-    // Close the file
-    fclose($outputFile);
+    // Write the output to result.txt
+    file_put_contents('result.txt', $output);
 }
 
 // Run the test
@@ -659,9 +623,9 @@ explanationExamples : `
 require_once 'question1.php';
 
 // Test cases
-echo "Test 1: " . largestInteger(20, 4) . " // should return 20\\n";
-echo "Test 2: " . largestInteger(30, 40) . " // should return 40\\n";
-echo "Test 3: " . largestInteger(80, 9) . " // should return 80\\n";
+echo "Test 1: " . largestInteger(20, 4) . " // should return 20\\\n";
+echo "Test 2: " . largestInteger(30, 40) . " // should return 40\\\n";
+echo "Test 3: " . largestInteger(80, 9) . " // should return 80\\\n";
 
 ?>
 `

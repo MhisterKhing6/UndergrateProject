@@ -7,6 +7,7 @@ import { createStudentMarkSpace, deletFolder, writeToFile } from "../utils/fileH
 import { checkIfResulstsFileExits, sanitizeResults } from "../utils/markingHelperFunction.js";
 import { codingStandard } from "../utils/requirementScripts.js";
 import { cloneRepository, repositoryLink } from "../utils/submissionFunctions.js";
+import { json } from 'sequelize';
 export class StudentController {
 
     static assignments = async (req, res) => {
@@ -273,7 +274,7 @@ export class StudentController {
         //clone repository
         let cloningRespone = await cloneRepository(link, markSpacePath)
         if(!cloningRespone) {
-                return res.status(500).json({message:"no internet to clone file"})
+                return res.status(400).json({message:"Repository not found"})
         }
         if(cloningRespone.failed)
             return res.status(400).json({"message": cloneRepository.message})
@@ -303,10 +304,10 @@ export class StudentController {
          let genRequirementMark = 0;
          let genRequirementResult = []
          let genMarkTest = false
-         let requirements   = await AssignmentRequirement.findAll({where: {AssignmentId:task.AssignmentId}})
-         if(true){
+         let requirement   = await AssignmentRequirement.findOne({where: {AssignmentId:task.AssignmentId}})
+         if(requirement){
             genMarkTest = true
-            if(true)
+            if(requirement.codingStandard)
                 {
                     //run coding standard function
                     let standardFunction = codingStandard[asignment.Compiler.name]
@@ -321,7 +322,7 @@ export class StudentController {
          }
          //start marking here
          let studentMarkResult = await sanitizeResults(markSpacePath)
-         console.log(studentMarkResult)
+
          if(!studentMarkResult)
             return res.status(501).json({"message": "error generating student meta data wrong format"})
          //save results statistics
@@ -379,7 +380,7 @@ export class StudentController {
          //add marks obtain from coding standards
          studentMarkResult.marks += genRequirementMark
          let totalMarks = task.totalMarks  + (genMarkTest ? 10 : 0)
-         studentMarkResult.marks = (studentMarkResult.marks / totalMarks) * 100
+         studentMarkResult.marks = Math.round((studentMarkResult.marks  * 100 / totalMarks) * 100) / 100
          //save option here
          let savedTaskResult = await TaskResult.findOne({where: {TaskId:task.id, StudentId:req.user.id}})
          let totallAssResult = await AssignmentResult.findOne({where: {StudentId:req.user.id, AssignmentId:task.AssignmentId}})
@@ -461,10 +462,10 @@ export class StudentController {
          let genRequirementMark = 0;
          let genTest = false
          let genRequirementResult = []
-         let requirements   = await AssignmentRequirement.findAll({where: {AssignmentId:task.AssignmentId}})
-         if(true){
+         let requirement  = await AssignmentRequirement.findOne({where: {AssignmentId:task.AssignmentId}, raw:true})
+         if (requirement){
             genTest = true
-            if(true)
+            if(requirement.codingStandard)
                 {
                     //run coding standard function
                     let standardFunction = codingStandard[asignment.Compiler.name]
@@ -549,7 +550,7 @@ export class StudentController {
          //add marks obtain from coding standards
          studentMarkResult.marks += genRequirementMark
          let totalMarks = task.totalMarks + (genTest ? 10 : 0)
-         studentMarkResult.marks = (studentMarkResult.marks / totalMarks) * 100
+         studentMarkResult.marks = Math.round((studentMarkResult.marks  * 100 / totalMarks) * 100) / 100
          //save option here
          let savedTaskResult = await TaskResult.findOne({where: {TaskId:task.id, StudentId:req.user.id}})
          let totallAssResult = await AssignmentResult.findOne({where: {StudentId:req.user.id, AssignmentId:task.AssignmentId}})
@@ -582,4 +583,45 @@ export class StudentController {
             return res.status(501).json({"message": "internal error"})
         }
     }
+    static ViewGrades = async (req, res) => {
+        let courseId = req.params.courseId
+        //get all assignments that has course as id
+        let assignments = await Assignment.findAll({include: [{model:Course}, {model: Compiler}],where:{CourseId:courseId}, raw:true,nest:true, order:[["startDate", 'DESC']]})
+        //programming name is fixed
+        let grades = []
+        for(let i=0; i < assignments.length; i++) {
+            let assignment = assignments[i]
+            let output = {}
+            //check for  non future assignments
+            if(new Date(assignment.startDate) > new Date())
+                continue
+            let assignmentResult = await AssignmentResult.findOne({where: {StudentId:req.user.id , AssignmentId:assignment.id}})
+            //find all task results
+            let tasks = await Task.findAll({where:{AssignmentId:assignment.id},attributes: ["id", "number"], order:[["number", "ASC"]], raw:true, nest:true})
+            let taskResults = []
+            for (const task of tasks) {
+                //find task results
+                let taskResult = await TaskResult.findOne({attributes:["mark", "completion", "id"],where:{TaskId:task.id, StudentId:req.user.id}, raw:true})
+                taskResult.number = task.number
+                taskResults.push(taskResult)
+            }
+            output.tasks = taskResults
+            output.mark = assignmentResult ? assignmentResult.mark : 0
+            output.startDate = assignment.startDate
+            output.totalTask = tasks.length
+            output.endDate = assignment.endDate
+            output.id = assignment.id
+            output.compiler = assignment.Compiler.name
+            output.courseCode = assignment.Course.courseCode
+            if(new Date(assignment.endDate) > new Date() )
+                output.status = "open"
+            else 
+                output.status = "close"
+            output.title = assignment.title
+            grades.push(output)
+    
+        }
+        return res.status(200).json(grades)
+    }
 }
+

@@ -125,4 +125,9 @@ lecturerRoute.get("/export/tasks/:id", async (req, res) => {
  * lecturer routes
  */
 lecturerRoute.get("/submission/:id", AssignmentSController.ViewSubmissionAssignment)
+
+/**
+ * get Student report
+ */
+lecturerRoute.post("/student-report", AssignmentSController.studentReport)
 export {lecturerRoute}
