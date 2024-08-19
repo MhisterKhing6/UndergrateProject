@@ -61,7 +61,7 @@ lecturerRoute.put("/assignment", AssignmentSController.updateAssignment)
  * method delete
  * domain restricted to lecturers
  */
-lecturerRoute.delete("/assignment/:id", AssignmentSController.deletAssignment)
+lecturerRoute.delete("/assignment/:id", AssignmentSController.deleteAssignment)
 /*
  * add questions to assignments
  * method: post

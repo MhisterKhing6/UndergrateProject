@@ -8,10 +8,12 @@ import { Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult,
 import { deleteTaskFile, readTaskFile, saveTaskFile, writeToFile } from "../utils/fileHandler.js"
 import { assignmentStats, exportExcell, exportPdf, taskStats } from "../utils/statisticsFunctions.js"
 import { verifyMandatoryFields } from "../utils/verificationFunctions.js"
+import { raw } from "config/raw.js"
+import { jobSchedule } from "../utils/plagiarismChecks.js"
 
 class AssignmentSController {
     static createAssignment = async (req, res) => {
-        //get assignemt details from body
+        //get ass details from body
         let assignmendetails = req.body
         //get requiredFiels
         let requiredFields = ["title", "ClassId", "CompilerId", "startDate", "endDate"]
@@ -31,6 +33,15 @@ class AssignmentSController {
             await response.addAssignmentRequirement(assRequiremnt)
             //save to class
             await AssignmentClasses.create({"AssignmentId":response.id, "ClassId": assignmendetails.ClassId })
+            
+            //check for plagiarism
+            if(assignmendetails.plagiarism) {
+                //find compiler code
+                console.log("here")
+                let compiler = await Compiler.findByPk(assignmendetails.CompilerId, {raw:true, nest:true})
+                jobSchedule(response.id, compiler.code, new Date(assignmendetails.endDate))
+            }
+
             return res.status(201).json({"created": true, "id": response.id})
         } catch (err) {
             console.log(err)
@@ -41,7 +52,7 @@ class AssignmentSController {
     }
 
     static getAssignmentDetails = async (req, res) => {
-        //delete enteries
+        //delete entries
         let id = req.params.id
         if(!id)
             return req.status(200).json({"reason": "fields missing", missingFields: "id"})
@@ -51,13 +62,13 @@ class AssignmentSController {
             {model:Course}, {model:Class, include:[{model:Program}]}, {model:Compiler}
         ], attributes:['endDate', "startDate", "title", "objectives",
         'gitMode', "repository", "CourseId", "LecturerId"]})
-        //delete assignemnt
+        //delete assignment
         if(!entry)
             return res.status(400).json({reason: "assignment not found"})
         return res.status(200).json(entry)
     }
 
-    static deletAssignment = async (req, res) => {
+    static deleteAssignment = async (req, res) => {
         //delete enteries
         let id = req.params.id
         let entry = await Assignment.findByPk(id)  

@@ -19,6 +19,9 @@ import { Lecturer } from "../users/lecturer.js";
 import { Student } from "../users/student.js";
 import { VerifyEmail } from "../verifications/emailVerication.js";
 import { ResetPasswordDb } from "../verifications/passwordsReset.js";
+import { TaskChecks } from "../plagiarism/TaskChecks.js";
+import { SubmissionChecks } from "../plagiarism/Submission.js";
+import { AssignmentScorePlagiarism } from "../plagiarism/AssignmentScore.js";
 
 const AssignmentClasses = databaseConnection.define('AssignmentClasses', {
     ClassId: {
@@ -142,11 +145,11 @@ Student.hasMany(TestResult, {constraints:false})
 TestResult.belongsTo(Student, {constraints:false})
 
 //relationships between message and assignment
-Assignment.hasMany(Message, {constraints:false, onDelete: "CASCADE"})
+Assignment.hasMany(Message, {constraints:false})
 Message.belongsTo(Assignment, {constraints:false})
 
 //relations between file and message
-Message.hasMany(File, {constraints:false, onDelete: "CASCADE"})
+Message.hasMany(File, {constraints:false})
 File.belongsTo(Message, {constraints:false})
 
 //relationship between notification and message
@@ -157,6 +160,27 @@ File.belongsTo(Message, {constraints:false})
 //relationship between message and message
 Message.belongsTo(Message, {constraints:false, as:"parentMessage"})
 
+//plagiarism relationships
+//relationship between task and checks
+Task.hasOne(TaskChecks,{constraints:false})
+TaskChecks.belongsTo(Task)
+
+//relations check submission and task
+Student.hasMany(SubmissionChecks, {constraints:false})
+SubmissionChecks.belongsTo(Student, {constraints:false})
+
+//relationships between submissionChecks
+Task.hasMany(SubmissionChecks, {constraints:false})
+SubmissionChecks.belongsTo(Task)
+
+//relationship between Assignment score plagiarism
+Assignment.hasMany(AssignmentScorePlagiarism, {constraints:false, onDelete: "CASCADE"})
+AssignmentScorePlagiarism.belongsTo(Assignment, {constraints:false})
+
+//relationship between plagiarism and assignment score
+Student.hasMany(AssignmentScorePlagiarism, {constraints:false})
+AssignmentScorePlagiarism.belongsTo(Student, {constraints:false})
+
 databaseConnection.sync({alter: true})
-export { Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, ClassCourses, Compiler, Course, File, Lecturer, Message, Notification, Program, ResetPasswordDb, Student, Task, TaskResult, TestResult, TestStatistics, VerifyEmail };
+export {TaskChecks, SubmissionChecks, Assignment, AssignmentClasses, AssignmentRequirement, AssignmentResult, Class, ClassCourses, Compiler, Course, File, Lecturer, Message, Notification, Program, ResetPasswordDb, Student, Task, TaskResult, TestResult, TestStatistics, VerifyEmail };
 

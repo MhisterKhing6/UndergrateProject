@@ -10,6 +10,7 @@ extension:".js", enviroment:"Js",name: "javascript", "version": "22.00",
     <li>Your file should use the js file extension </li>
     <li>All of your functions must be exported </li>
 </ul>`, setupLink: "https://nodejs.org/en",
+"code":39,
 testExamples:`
 //A Simple test for  finding largestInteger
 //The student is to write the the function in file question1.js and submit
@@ -93,6 +94,7 @@ extension:".c++,.cpp","enviroment":"c++", "name": "c++", "version": "2.xx",
     <li>All your files must be executable </li>
     <li>The length of your files will be tested using wc </li>
 </ul>`, setupLink: "https://gcc.gnu.org",
+code: 17,
 testExamples:
 `
 // A test for  largestInteger
@@ -194,6 +196,7 @@ extension:"c",enviroment:"c", "name": "c", "version": "2.xx",
     <li>All your files must be executable </li>
     <li>The length of your files will be tested using wc </li>
 </ul>`, setupLink: "https://gcc.gnu.org",
+code: 16,
 testExamples : 
 `
 // A simple test for finding largest number
@@ -294,6 +297,7 @@ extension:".java",enviroment: "java","name": "java", "version": "2.xx",
     <li>The length of your files will be tested using wc</li>
     <li>Your file should use the sql extension </li>
 </ul>`, setupLink: "https://nodejs.org/en",
+code: 13,
 testExamples:
 `
 //simple test for finding laragest integer function
@@ -406,6 +410,7 @@ extension:".py", enviroment: "python", "name": "python", "version": "3.xx",
     <li>All your files must be executable </li>
     <li>The length of your files will be tested using wc </li>
 </ul>`, setupLink: "https://www.python.org",
+code:48,
 explanationExamples: `
 # explanation examples gives more information about the task in developer view
 from question import largestInteger
@@ -485,6 +490,7 @@ extension:".rb", enviroment: "ruby", "name": "ruby", "version": "3.xx",
     <li>Your file should use .rb extension </li>
     <li>WC will be use to count the length of your file </li>
 </ul>`, setupLink: "https://www.ruby-lang.org",
+code: 33,
 explanationExamples: `
 # Explanation examples gives more information about the requirements in program view
 require_relative 'question1'
@@ -617,9 +623,11 @@ function writeTestResults() {
 writeTestResults();
 ?>
 `,
+code:21
+,
 explanationExamples : `
 <?php
-// give more information about studen question
+// give more information about student question
 require_once 'question1.php';
 
 // Test cases

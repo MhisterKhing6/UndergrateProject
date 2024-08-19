@@ -15,6 +15,7 @@
     "@sequelize/mariadb": "^7.0.0-alpha.40",
     "bcrypt": "^5.1.1",
     "chai-http": "^4.4.0",
+    "codequiry": "^1.0.4",
     "config": "^3.3.11",
     "cookie-parser": "^1.4.6",
     "cookie-session": "^2.1.0",

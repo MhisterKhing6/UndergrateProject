@@ -42,6 +42,9 @@ Compiler.init({
     },
     testExamples : {
         type: DataTypes.TEXT, allowNull: false,
+    },
+    code: {
+        type: DataTypes.INTEGER, allowNull:false
     }
 
 }, {sequelize:databaseConnection})
