@@ -246,7 +246,7 @@ export class StudentController {
 
     static submitAssignmentGihub = async (req, res) => {
         /**
-         * summiteAssignmentGithu : clone student assignment from github
+         * submiteAssignmentGithub : clone student assignment from github
          * req: http request object
          * res: http response object
          */
@@ -363,7 +363,6 @@ export class StudentController {
                     statEntry.passNumber = 1
                 }
                  else {
-                    console.log("failed")
                     statEntry.failedNumber = 1
                  }
                 testEntry = TestStatistics.build(statEntry)
@@ -508,8 +507,7 @@ export class StudentController {
          let studentMarkResult = await sanitizeResults(markSpacePath)
          if(!studentMarkResult){
             return res.status(501).json({"message": "error generating student meta data wrong format"})
-
-         }
+        }
          for(const result of studentMarkResult.testResult) {
             //check to see if a stats entry is already saved
             let testEntry = await TestStatistics.findOne({where: {TaskId:task.id, testNumber:result.testnumber}})
