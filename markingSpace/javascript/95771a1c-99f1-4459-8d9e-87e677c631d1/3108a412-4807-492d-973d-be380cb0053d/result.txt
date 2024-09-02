@@ -1,0 +1,21 @@
+status=pass
+feedback=Test case passed for positive integers.
+testNumber=1
+;
+status=pass
+feedback=Test case passed for any number raised to the power of 0.
+testNumber=2
+;
+status=pass
+feedback=Test case passed for negative base number.
+testNumber=3
+;
+status=pass
+feedback=Test case passed for negative exponent.
+testNumber=4
+;
+status=pass
+feedback=Test case passed for base number 0.
+testNumber=5
+;
+marks=45

@@ -1,0 +1,22 @@
+status=pass
+feedback=Test case passed for positive integers.
+testNumber=1
+;
+status=pass
+feedback=Test case passed for zero as base.
+testNumber=2
+;
+status=pass
+feedback=Test case passed for negative base.
+testNumber=3
+;
+status=pass
+feedback=Test case passed for any base raised to power 0.
+testNumber=4
+;
+status=pass
+feedback=Test case passed for negative base and positive power.
+testNumber=5
+;
+marks=25
+completion

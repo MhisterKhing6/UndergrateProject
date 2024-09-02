@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Get the file name argument
+FILE="$1"
+
+# If no argument provided, exit with a message
+if [ -z "$FILE" ]; then
+  echo "Usage: runjs <filename>"
+  exit 1
+fi
+
+# Append .js extension if not present
+if [[ ! "$FILE" == *.js ]]; then
+  FILE="$FILE.js"
+fi
+
+# Run the file using Node.js
+if [ -f "$FILE" ]; then
+  node "$FILE"
+else
+  echo "File '$FILE' not found"
+  exit 1
+fi
+

@@ -128,7 +128,7 @@ let createFolder = async (folderPath) => {
 
 let createStudentMarkSpace =  async (compilerEnviroment, assignemntId, studentId) => {
     let baseFolder = path.join(path.resolve("."), "markingSpace")
-        let abs = path.join(baseFolder, compilerEnviroment,assignemntId, studentId)
+        let abs = path.join(baseFolder, compilerEnviroment, assignemntId, studentId)
         let response = await createFolder(abs)
         return response ? abs : null
 }

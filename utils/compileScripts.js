@@ -1,7 +1,8 @@
-import { existsSync } from "fs"
+import { existsSync, copyFile, copyFileSync } from "fs"
 import path from "path"
 import shell from "shelljs"
 import {execa} from 'execa'
+ 
 
 const checkSolutionFile = (workSpace, studenSolutionPath, presence, repo=null) => {
 /**
@@ -25,18 +26,21 @@ let compiledPath = [] //to prevent compiling header files in c which will genera
 }
 
 
-const compileCode = async (testScript,workSpace, runCode)  => {
+const compileCode = async (testScript,workSpace, runCode, repository=null)  => {
       try {
-            const baseName = path.basename(testScript)
-            await execa('cp', [testScript,baseName], {cwd:workSpace})
-            return await runCode(baseName, workSpace)
+            let baseName = path.basename(testScript)
+            let markSpace = repository ? path.join(workSpace, repository) : workSpace
+            console.log(markSpace)
+            await execa('cp', [testScript,baseName], {cwd: markSpace})
+            return await runCode(baseName, markSpace)
       } catch(err) {
-        return {stderr: err.stderr.replaceAll(path.join(path.resolve("."),workSpace),"").replaceAll(path.dirname(testScript),""), stdout:err.stdout}}
+        console.log(err)
+        return {stderr: err.stderr.replaceAll(path.join(path.resolve("."),workSpace),"").replaceAll(path.dirname(testScript),"") , stdout:err.stdout}}
       }
       
 
 const compileScripts = {
-    "c++":  async (testScript, workSpace, solutionFiles) => {
+    "c++":  async (testScript, workSpace, solutionFiles, repository=null) => {
                 if(!shell.which("g++"))
                     {
                         console.log("g++ not installed")
@@ -45,10 +49,10 @@ const compileScripts = {
                 let response = await compileCode(testScript, workSpace, async (base, currentWd) =>{ 
                     await execa('g++',[base, ...solutionFiles], {cwd:currentWd})
                     return await execa("./a.out", {cwd:currentWd})     
-                })
+                }, repository)
                 return {"error": false, compileResponse: response}
     },
-    "c":  async (testScript, workSpace, ...solutionFiles) => {
+    "c":  async (testScript, workSpace, solutionFiles, repository=null) => {
                 if(!shell.which("gcc"))
                     {
                         console.log("gcc not installed")
@@ -57,30 +61,31 @@ const compileScripts = {
                 let response = await compileCode(testScript, workSpace, async (base, currentWd) =>{ 
                         await execa('gcc',[base, solutionFiles], {cwd:currentWd})
                         return await execa("./a.out", {cwd:currentWd})     
-                })
+                }, repository)
                 return {"error": false, compileResponse: response}
                 
     },
-    "js": async (testScript, workSpace, solutionFiles) => {
-                if(!shell.which("node"))
-                    {
-                        console.log("node not installed")
-                        return {"error": true, message: "node compiler not installed"}
-                    }
-                let response = await compileCode(testScript, workSpace, async (base, currentWd) => await execa('node',[base], {cwd:currentWd}))
-                return {"error": false, compileResponse: response}
-    },
-    "python": async (testScript, workSpace, solutionFiles) => {
+    "javascript": async (testScript, workSpace, solutionFiles, repository=null) => {
+        if(!shell.which("node"))
+            {
+                console.log("node not installed")
+                return {"error": true, message: "node compiler not installed"}
+            }
+            let response = await compileCode(testScript, workSpace, async (base, currentWd) => await execa('node',[base], {cwd:currentWd}), repository) 
+            return {"error": false, compileResponse: response}
+}
+    ,
+    "python": async (testScript, workSpace, solutionFiles, repository=null) => {
                 if(!shell.which("python"))
                     {
                         console.log("python not installed")
                         return {"error": true, message: "python compiler not installed"}
                     }
-                let response = await compileCode(testScript, workSpace, async (base, currentWd) => await execa('python',[base], {cwd:currentWd}))
+                let response = await compileCode(testScript, workSpace, async (base, currentWd) => await execa('python',[base], {cwd:currentWd}), repository)
                 return {"error": false, compileResponse: response}
     },
 
-    "java": async (testScript, workSpace, solutionFiles) => {
+    "java": async (testScript, workSpace, solutionFiles, repository=null) => {
                 if(!shell.which("javac"))
                     {
                         console.log("java compiler not installed")
@@ -89,27 +94,27 @@ const compileScripts = {
                 let response = await compileCode(testScript, workSpace, async (base, currentWd) =>{ 
                         await execa('javac',[base, ...solutionFiles], {cwd:currentWd})
                         return await execa('java',['Test'], {cwd:currentWd})
-                })
+                }, repository)
                 return {"error": false, compileResponse: response}
                 
     },
-    "php": async (testScript, workSpace, solutionFiles) => {
+    "php": async (testScript, workSpace, solutionFiles, repository=null) => {
                 if(!shell.which("php"))
                     {
                         console.log("php not installed")
                         return {"error": true, message: "php not installed"}
                     }
-                let response = await compileCode(testScript, workSpace, async (base, currentWd) => await execa('php',[base], {cwd:currentWd}))
+                let response = await compileCode(testScript, workSpace, async (base, currentWd) => await execa('php',[base], {cwd:currentWd}), repository)
                 return {"error": false, compileResponse: response}
     },
     "mysql": null,
-    "ruby": async (testScript, workSpace, solutionFiles) => {
+    "ruby": async (testScript, workSpace, solutionFiles, repository=null) => {
         if(!shell.which("ruby"))
             {
                 console.log("ruby not installed")
                 return {"error": true, message: "ruby not installed"}
             }
-        let response = await compileCode(testScript, workSpace, async (base, currentWd) => await execa('ruby',[base], {cwd:currentWd}))
+        let response = await compileCode(testScript, workSpace, async (base, currentWd) => await execa('ruby',[base], {cwd:currentWd}), repository)
         return {"error": false, compileResponse: response}
 },
 }

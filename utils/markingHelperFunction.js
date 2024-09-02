@@ -4,8 +4,9 @@ import { notifyLecturer } from "./emailHandler.js"
 import { readFromFile } from "./fileHandler.js"
 
 
-const checkIfResulstsFileExits = async (markSpace, lecturerEmail,assTitle, questionNumber) => {
-    if(!existsSync(path.join(markSpace, "result.txt"))) {
+const checkIfResulstsFileExits = async (markSpace, repository=null) => {
+    let testPath = repository ? path.join(markSpace, repository) : markSpace
+    if(!existsSync(path.join(testPath, "result.txt"))) {
         notifyLecturer(lecturerEmail, assTitle, questionNumber)
         return false
     }
@@ -15,8 +16,9 @@ const checkIfResulstsFileExits = async (markSpace, lecturerEmail,assTitle, quest
 
 //marking engine, converting results to object for manipulation
 
-const sanitizeResults = async (workspace) => {
- const content = await readFromFile(path.join(workspace, "result.txt"))
+const sanitizeResults = async (workspace, repository=null) => {
+let testPath = repository ? path.join(workspace, repository) : workspace
+ const content = await readFromFile(path.join(testPath, "result.txt"))
  //convert content to lines
  let tasks = content.split(";") // get the task in as list
  let formated = "" // formated
